@@ -1,34 +1,46 @@
+loadstring([[
 local success, err = pcall(function()
 	local Players = game:GetService("Players")
 	local UserInputService = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
 
 	local player = Players.LocalPlayer
-	local playerGui = player:WaitForChild("PlayerGui")
+	local parentGui = (gethui and gethui()) or player:WaitForChild("PlayerGui")
 
-	-- Dùng gethui() để menu không bị xóa
-	local parentGui = (gethui and gethui()) or playerGui
-
-	-- Xóa menu cũ nếu có
 	if parentGui:FindFirstChild("SpeedMenuGui") then
 		parentGui.SpeedMenuGui:Destroy()
 	end
 
-	-- Biến lưu tốc độ hiện tại
-	local currentSpeed = 16 -- tốc độ mặc định của Roblox
+	local currentSpeed = 16
 	local speedEnabled = true
 
-	-- ========== Tạo GUI ==========
+	-- ========== GUI ==========
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "SpeedMenuGui"
 	screenGui.ResetOnSpawn = false
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.Parent = parentGui
 
+	-- Nút nổi mở menu (dành cho Android)
+	local openButton = Instance.new("TextButton")
+	openButton.Name = "OpenButton"
+	openButton.Size = UDim2.new(0, 55, 0, 55)
+	openButton.Position = UDim2.new(1, -70, 0.5, -27)
+	openButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+	openButton.Text = "SPD"
+	openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	openButton.TextSize = 16
+	openButton.Font = Enum.Font.GothamBold
+	openButton.Parent = screenGui
+
+	local openCorner = Instance.new("UICorner")
+	openCorner.CornerRadius = UDim.new(1, 0)
+	openCorner.Parent = openButton
+
+	-- Frame chính
 	local frame = Instance.new("Frame")
-	frame.Name = "MainFrame"
-	frame.Size = UDim2.new(0, 280, 0, 200)
-	frame.Position = UDim2.new(0.5, -140, 0.5, -100)
+	frame.Size = UDim2.new(0, 280, 0, 210)
+	frame.Position = UDim2.new(0.5, -140, 0.5, -105)
 	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 	frame.BorderSizePixel = 0
 	frame.Visible = false
@@ -48,13 +60,13 @@ local success, err = pcall(function()
 	title.Parent = frame
 
 	local textBox = Instance.new("TextBox")
-	textBox.Size = UDim2.new(0.8, 0, 0, 36)
-	textBox.Position = UDim2.new(0.1, 0, 0.28, 0)
+	textBox.Size = UDim2.new(0.8, 0, 0, 40)
+	textBox.Position = UDim2.new(0.1, 0, 0.25, 0)
 	textBox.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
 	textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 	textBox.PlaceholderText = "Nhập số speed..."
 	textBox.Text = ""
-	textBox.TextSize = 16
+	textBox.TextSize = 18
 	textBox.Font = Enum.Font.Gotham
 	textBox.ClearTextOnFocus = false
 	textBox.Parent = frame
@@ -64,12 +76,12 @@ local success, err = pcall(function()
 	boxCorner.Parent = textBox
 
 	local setButton = Instance.new("TextButton")
-	setButton.Size = UDim2.new(0.8, 0, 0, 36)
-	setButton.Position = UDim2.new(0.1, 0, 0.52, 0)
+	setButton.Size = UDim2.new(0.8, 0, 0, 42)
+	setButton.Position = UDim2.new(0.1, 0, 0.5, 0)
 	setButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 	setButton.Text = "Set Speed"
 	setButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	setButton.TextSize = 16
+	setButton.TextSize = 18
 	setButton.Font = Enum.Font.GothamBold
 	setButton.Parent = frame
 
@@ -88,8 +100,8 @@ local success, err = pcall(function()
 	statusLabel.Parent = frame
 
 	local closeButton = Instance.new("TextButton")
-	closeButton.Size = UDim2.new(0, 30, 0, 30)
-	closeButton.Position = UDim2.new(1, -35, 0, 5)
+	closeButton.Size = UDim2.new(0, 32, 0, 32)
+	closeButton.Position = UDim2.new(1, -38, 0, 5)
 	closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
 	closeButton.Text = "X"
 	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -109,7 +121,10 @@ local success, err = pcall(function()
 		end
 	end
 
-	-- Nhấn P mở/đóng menu
+	-- Nút nổi trên Android
+	openButton.MouseButton1Click:Connect(toggleMenu)
+
+	-- Vẫn hỗ trợ phím P nếu có bàn phím
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then return end
 		if input.KeyCode == Enum.KeyCode.P then
@@ -117,12 +132,11 @@ local success, err = pcall(function()
 		end
 	end)
 
-	-- Nút Set Speed
 	setButton.MouseButton1Click:Connect(function()
 		local speed = tonumber(textBox.Text)
 		if speed then
 			if speed < 0 then speed = 0 end
-			if speed > 500 then speed = 500 end -- tăng giới hạn lên 500
+			if speed > 500 then speed = 500 end
 
 			currentSpeed = speed
 			statusLabel.Text = "Speed hiện tại: " .. currentSpeed
@@ -142,10 +156,9 @@ local success, err = pcall(function()
 		frame.Visible = false
 	end)
 
-	-- ========== FORCE SPEED (quan trọng để bypass hầu hết game) ==========
+	-- Force tốc độ liên tục
 	RunService.Heartbeat:Connect(function()
 		if not speedEnabled then return end
-
 		local character = player.Character
 		if character then
 			local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -155,9 +168,8 @@ local success, err = pcall(function()
 		end
 	end)
 
-	-- Khi nhân vật respawn vẫn giữ tốc độ
 	player.CharacterAdded:Connect(function(character)
-		task.wait(0.3)
+		task.wait(0.4)
 		local humanoid = character:WaitForChild("Humanoid", 5)
 		if humanoid then
 			humanoid.WalkSpeed = currentSpeed
@@ -166,5 +178,6 @@ local success, err = pcall(function()
 end)
 
 if not success then
-	warn("Lỗi script:", err)
+	warn("Lỗi:", err)
 end
+]])()
