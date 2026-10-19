@@ -4,7 +4,6 @@ local success, err = pcall(function()
 	local UserInputService = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
 	local Workspace = game:GetService("Workspace")
-	local VirtualInputManager = game:GetService("VirtualInputManager")
 
 	local player = Players.LocalPlayer
 	local parentGui = (gethui and gethui()) or player:WaitForChild("PlayerGui")
@@ -13,8 +12,8 @@ local success, err = pcall(function()
 		parentGui.SpeedMenuGui:Destroy()
 	end
 
-	-- Biến điều khiển
 	local currentSpeed = 16
+	local currentJump = 50
 	local speedEnabled = true
 	local instantInteract = false
 	local reachEnabled = false
@@ -30,9 +29,7 @@ local success, err = pcall(function()
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.Parent = parentGui
 
-	-- Nút nổi
 	local openButton = Instance.new("TextButton")
-	openButton.Name = "OpenButton"
 	openButton.Size = UDim2.new(0, 55, 0, 55)
 	openButton.Position = UDim2.new(1, -70, 0.4, 0)
 	openButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
@@ -41,12 +38,8 @@ local success, err = pcall(function()
 	openButton.TextSize = 16
 	openButton.Font = Enum.Font.GothamBold
 	openButton.Parent = screenGui
+	Instance.new("UICorner", openButton).CornerRadius = UDim.new(1, 0)
 
-	local openCorner = Instance.new("UICorner")
-	openCorner.CornerRadius = UDim.new(1, 0)
-	openCorner.Parent = openButton
-
-	-- Frame chính (cao hơn để chứa nhiều nút)
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(0, 300, 0, 420)
 	frame.Position = UDim2.new(0.5, -150, 0.5, -210)
@@ -54,10 +47,7 @@ local success, err = pcall(function()
 	frame.BorderSizePixel = 0
 	frame.Visible = false
 	frame.Parent = screenGui
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = frame
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, 0, 0, 36)
@@ -68,7 +58,6 @@ local success, err = pcall(function()
 	title.Font = Enum.Font.GothamBold
 	title.Parent = frame
 
-	-- Speed
 	local textBox = Instance.new("TextBox")
 	textBox.Size = UDim2.new(0.8, 0, 0, 34)
 	textBox.Position = UDim2.new(0.1, 0, 0.10, 0)
@@ -91,7 +80,6 @@ local success, err = pcall(function()
 	setButton.Parent = frame
 	Instance.new("UICorner", setButton).CornerRadius = UDim.new(0, 8)
 
-	-- Reach
 	local reachBox = Instance.new("TextBox")
 	reachBox.Size = UDim2.new(0.8, 0, 0, 34)
 	reachBox.Position = UDim2.new(0.1, 0, 0.31, 0)
@@ -114,7 +102,6 @@ local success, err = pcall(function()
 	reachButton.Parent = frame
 	Instance.new("UICorner", reachButton).CornerRadius = UDim.new(0, 8)
 
-	-- Fast Attack
 	local fastButton = Instance.new("TextButton")
 	fastButton.Size = UDim2.new(0.8, 0, 0, 34)
 	fastButton.Position = UDim2.new(0.1, 0, 0.52, 0)
@@ -126,7 +113,6 @@ local success, err = pcall(function()
 	fastButton.Parent = frame
 	Instance.new("UICorner", fastButton).CornerRadius = UDim.new(0, 8)
 
-	-- No Cooldown
 	local cdButton = Instance.new("TextButton")
 	cdButton.Size = UDim2.new(0.8, 0, 0, 34)
 	cdButton.Position = UDim2.new(0.1, 0, 0.63, 0)
@@ -138,7 +124,6 @@ local success, err = pcall(function()
 	cdButton.Parent = frame
 	Instance.new("UICorner", cdButton).CornerRadius = UDim.new(0, 8)
 
-	-- Instant Interact
 	local interactButton = Instance.new("TextButton")
 	interactButton.Size = UDim2.new(0.8, 0, 0, 34)
 	interactButton.Position = UDim2.new(0.1, 0, 0.74, 0)
@@ -197,11 +182,11 @@ local success, err = pcall(function()
 	reachButton.MouseButton1Click:Connect(function()
 		local val = tonumber(reachBox.Text)
 		if val then
-			reachValue = math.clamp(val, 5, 100)
+			reachValue = math.clamp(val, 5, 80)
 			reachBox.Text = ""
 		end
 		reachEnabled = not reachEnabled
-		reachButton.Text = reachEnabled and "Đánh xa: ON (" .. reachValue .. ")" or "Đánh xa: OFF"
+		reachButton.Text = reachEnabled and ("Đánh xa: ON (" .. reachValue .. ")") or "Đánh xa: OFF"
 		reachButton.BackgroundColor3 = reachEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 55)
 		statusLabel.Text = "Speed: " .. currentSpeed .. " | Reach: " .. reachValue
 	end)
@@ -228,16 +213,57 @@ local success, err = pcall(function()
 		frame.Visible = false
 	end)
 
+	-- Hàm xóa cooldown mạnh hơn
+	local function clearCooldown(container)
+		if not container then return end
+		for _, v in ipairs(container:GetDescendants()) do
+			-- NumberValue / IntValue
+			if v:IsA("NumberValue") or v:IsA("IntValue") then
+				local name = string.lower(v.Name)
+				if name:find("cool") or name:find("cd") or name:find("delay") 
+				or name:find("timer") or name:find("reload") or name:find("wait")
+				or name:find("time") or name:find("duration") then
+					v.Value = 0
+				end
+			end
+
+			-- BoolValue
+			if v:IsA("BoolValue") then
+				local name = string.lower(v.Name)
+				if name:find("cool") or name:find("cd") or name:find("debounce")
+				or name:find("busy") or name:find("active") or name:find("using") then
+					v.Value = false
+				end
+			end
+
+			-- Attribute
+			for attrName, attrValue in pairs(v:GetAttributes()) do
+				local an = string.lower(attrName)
+				if an:find("cool") or an:find("cd") or an:find("delay") 
+				or an:find("timer") or an:find("reload") or an:find("busy") then
+					if type(attrValue) == "number" then
+						v:SetAttribute(attrName, 0)
+					elseif type(attrValue) == "boolean" then
+						v:SetAttribute(attrName, false)
+					end
+				end
+			end
+		end
+	end
+
 	-- ========== Logic chính ==========
 	RunService.Heartbeat:Connect(function()
 		local character = player.Character
 		if not character then return end
+
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		local root = character:FindFirstChild("HumanoidRootPart")
 
-		-- Force Speed
-		if speedEnabled and humanoid then
+		-- Force di chuyển + nhảy
+		if humanoid then
 			humanoid.WalkSpeed = currentSpeed
+			humanoid.JumpPower = currentJump
+			humanoid.JumpHeight = 7.2
 		end
 
 		-- Instant Interact
@@ -249,27 +275,20 @@ local success, err = pcall(function()
 			end
 		end
 
-		-- No Cooldown (xóa cooldown của tool / ability)
+		-- Hồi chiêu nhanh (mạnh hơn)
 		if noCooldown then
-			local function clearCD(container)
-				for _, v in ipairs(container:GetDescendants()) do
-					if v:IsA("NumberValue") or v:IsA("IntValue") then
-						local name = string.lower(v.Name)
-						if name:find("cooldown") or name:find("cd") or name:find("delay") or name:find("wait") then
-							v.Value = 0
-						end
-					elseif v:IsA("BoolValue") and (string.lower(v.Name):find("cooldown") or string.lower(v.Name):find("debounce")) then
-						v.Value = false
-					end
-				end
+			clearCooldown(character)
+			if player:FindFirstChild("Backpack") then
+				clearCooldown(player.Backpack)
 			end
-			if player:FindFirstChild("Backpack") then clearCD(player.Backpack) end
-			if character then clearCD(character) end
+			if player:FindFirstChild("PlayerGui") then
+				clearCooldown(player.PlayerGui)
+			end
 		end
 
-		-- Fast Attack + Reach (đánh liên tục 0.1s trong phạm vi)
-		if (fastAttack or reachEnabled) and root and tick() - lastAttack >= 0.1 then
-			lastAttack = tick()
+		-- Đánh xa + Đánh nhanh
+		if (fastAttack or reachEnabled) and root and tick() - lastAttack >= 0.12 then
+			local hasTarget = false
 			for _, other in ipairs(Players:GetPlayers()) do
 				if other ~= player and other.Character then
 					local otherRoot = other.Character:FindFirstChild("HumanoidRootPart")
@@ -277,18 +296,20 @@ local success, err = pcall(function()
 					if otherRoot and otherHum and otherHum.Health > 0 then
 						local dist = (root.Position - otherRoot.Position).Magnitude
 						if dist <= reachValue then
-							-- Thử spam click / attack
-							pcall(function()
-								VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-								VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-							end)
-							-- Thử kích hoạt tool
-							local tool = character:FindFirstChildOfClass("Tool")
-							if tool then
-								pcall(function() tool:Activate() end)
-							end
+							hasTarget = true
+							break
 						end
 					end
+				end
+			end
+
+			if hasTarget then
+				lastAttack = tick()
+				local tool = character:FindFirstChildOfClass("Tool")
+				if tool then
+					pcall(function()
+						tool:Activate()
+					end)
 				end
 			end
 		end
@@ -297,7 +318,10 @@ local success, err = pcall(function()
 	player.CharacterAdded:Connect(function(char)
 		task.wait(0.5)
 		local hum = char:WaitForChild("Humanoid", 5)
-		if hum then hum.WalkSpeed = currentSpeed end
+		if hum then
+			hum.WalkSpeed = currentSpeed
+			hum.JumpPower = currentJump
+		end
 	end)
 end)
 
