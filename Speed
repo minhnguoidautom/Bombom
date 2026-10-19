@@ -1,255 +1,405 @@
 loadstring([[
 local success, err = pcall(function()
 	local Players = game:GetService("Players")
-	local UserInputService = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
-	local VirtualInputManager = game:GetService("VirtualInputManager")
+	local UserInputService = game:GetService("UserInputService")
+	local TweenService = game:GetService("TweenService")
 
 	local player = Players.LocalPlayer
 	local parentGui = (gethui and gethui()) or player:WaitForChild("PlayerGui")
 
-	if parentGui:FindFirstChild("SpeedMenuGui") then
-		parentGui.SpeedMenuGui:Destroy()
+	-- Xóa GUI cũ nếu có
+	if parentGui:FindFirstChild("HitboxGodMax") then
+		parentGui.HitboxGodMax:Destroy()
 	end
 
-	local currentSpeed = 16
-	local currentJump = 50
-	local reachEnabled = false
-	local reachValue = 20
-	local fastAttack = false
-	local lastAttack = 0
+	-- ==================== CÀI ĐẶT ====================
+	local Settings = {
+		Enabled = true,
+		Size = 60,
+		HeightMultiplier = 1.4,
+		Transparency = 0.6,
+		ShowVisual = true,
+		Color = Color3.fromRGB(255, 40, 40),
+		AlwaysOn = true,
+		UpdateRate = 0, -- 0 = mỗi frame
+	}
 
-	-- ========== GUI (tối ưu điện thoại) ==========
+	local hitboxes = {}
+	local connections = {}
+
+	-- ==================== GUI ====================
 	local screenGui = Instance.new("ScreenGui")
-	screenGui.Name = "SpeedMenuGui"
+	screenGui.Name = "HitboxGodMax"
 	screenGui.ResetOnSpawn = false
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.Parent = parentGui
 
-	-- Nút nổi to hơn cho điện thoại
+	-- Nút nổi
 	local openButton = Instance.new("TextButton")
-	openButton.Size = UDim2.new(0, 65, 0, 65)
-	openButton.Position = UDim2.new(1, -80, 0.45, 0)
-	openButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-	openButton.Text = "MENU"
+	openButton.Name = "OpenButton"
+	openButton.Size = UDim2.new(0, 58, 0, 58)
+	openButton.Position = UDim2.new(1, -72, 0.27, 0)
+	openButton.BackgroundColor3 = Color3.fromRGB(220, 30, 30)
+	openButton.Text = "HB"
 	openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	openButton.TextSize = 15
+	openButton.TextSize = 18
 	openButton.Font = Enum.Font.GothamBold
 	openButton.Parent = screenGui
-	Instance.new("UICorner", openButton).CornerRadius = UDim.new(1, 0)
+
+	local openCorner = Instance.new("UICorner")
+	openCorner.CornerRadius = UDim.new(1, 0)
+	openCorner.Parent = openButton
+
+	local openStroke = Instance.new("UIStroke")
+	openStroke.Color = Color3.fromRGB(255, 100, 100)
+	openStroke.Thickness = 2
+	openStroke.Parent = openButton
 
 	-- Frame chính
 	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(0, 320, 0, 400)
-	frame.Position = UDim2.new(0.5, -160, 0.5, -200)
-	frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+	frame.Name = "MainFrame"
+	frame.Size = UDim2.new(0, 300, 0, 340)
+	frame.Position = UDim2.new(0.5, -150, 0.5, -170)
+	frame.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
 	frame.BorderSizePixel = 0
 	frame.Visible = false
 	frame.Parent = screenGui
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 
+	local frameCorner = Instance.new("UICorner")
+	frameCorner.CornerRadius = UDim.new(0, 14)
+	frameCorner.Parent = frame
+
+	local frameStroke = Instance.new("UIStroke")
+	frameStroke.Color = Color3.fromRGB(60, 60, 70)
+	frameStroke.Thickness = 1.5
+	frameStroke.Parent = frame
+
+	-- Title
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, 0, 0, 40)
+	title.Size = UDim2.new(1, 0, 0, 42)
 	title.BackgroundTransparency = 1
-	title.Text = "Choose An Ability"
-	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.Text = "HITBOX GOD MAX"
+	title.TextColor3 = Color3.fromRGB(255, 60, 60)
 	title.TextSize = 20
 	title.Font = Enum.Font.GothamBold
 	title.Parent = frame
 
-	-- Speed
-	local textBox = Instance.new("TextBox")
-	textBox.Size = UDim2.new(0.85, 0, 0, 42)
-	textBox.Position = UDim2.new(0.075, 0, 0.13, 0)
-	textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-	textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-	textBox.PlaceholderText = "Nhập số Speed..."
-	textBox.TextSize = 17
-	textBox.Font = Enum.Font.Gotham
-	textBox.Parent = frame
-	Instance.new("UICorner", textBox).CornerRadius = UDim.new(0, 10)
+	-- Nút đóng
+	local closeButton = Instance.new("TextButton")
+	closeButton.Size = UDim2.new(0, 32, 0, 32)
+	closeButton.Position = UDim2.new(1, -40, 0, 6)
+	closeButton.BackgroundColor3 = Color3.fromRGB(190, 40, 40)
+	closeButton.Text = "X"
+	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeButton.TextSize = 16
+	closeButton.Font = Enum.Font.GothamBold
+	closeButton.Parent = frame
 
-	local setButton = Instance.new("TextButton")
-	setButton.Size = UDim2.new(0.85, 0, 0, 42)
-	setButton.Position = UDim2.new(0.075, 0, 0.26, 0)
-	setButton.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
-	setButton.Text = "Set Speed"
-	setButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	setButton.TextSize = 17
-	setButton.Font = Enum.Font.GothamBold
-	setButton.Parent = frame
-	Instance.new("UICorner", setButton).CornerRadius = UDim.new(0, 10)
+	local closeCorner = Instance.new("UICorner")
+	closeCorner.CornerRadius = UDim.new(0, 8)
+	closeCorner.Parent = closeButton
 
-	-- Reach
-	local reachBox = Instance.new("TextBox")
-	reachBox.Size = UDim2.new(0.85, 0, 0, 42)
-	reachBox.Position = UDim2.new(0.075, 0, 0.40, 0)
-	reachBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-	reachBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-	reachBox.PlaceholderText = "Nhập số Đánh xa (10-50)"
-	reachBox.TextSize = 16
-	reachBox.Font = Enum.Font.Gotham
-	reachBox.Parent = frame
-	Instance.new("UICorner", reachBox).CornerRadius = UDim.new(0, 10)
+	-- ===== Expand Toggle =====
+	local expandBtn = Instance.new("TextButton")
+	expandBtn.Size = UDim2.new(0.88, 0, 0, 40)
+	expandBtn.Position = UDim2.new(0.06, 0, 0.15, 0)
+	expandBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+	expandBtn.Text = "EXPAND HITBOX: ON"
+	expandBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	expandBtn.TextSize = 15
+	expandBtn.Font = Enum.Font.GothamBold
+	expandBtn.Parent = frame
 
-	local reachButton = Instance.new("TextButton")
-	reachButton.Size = UDim2.new(0.85, 0, 0, 42)
-	reachButton.Position = UDim2.new(0.075, 0, 0.53, 0)
-	reachButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-	reachButton.Text = "Đánh xa: OFF"
-	reachButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	reachButton.TextSize = 16
-	reachButton.Font = Enum.Font.GothamBold
-	reachButton.Parent = frame
-	Instance.new("UICorner", reachButton).CornerRadius = UDim.new(0, 10)
+	local expandCorner = Instance.new("UICorner")
+	expandCorner.CornerRadius = UDim.new(0, 9)
+	expandCorner.Parent = expandBtn
 
-	-- Fast Attack
-	local fastButton = Instance.new("TextButton")
-	fastButton.Size = UDim2.new(0.85, 0, 0, 42)
-	fastButton.Position = UDim2.new(0.075, 0, 0.66, 0)
-	fastButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-	fastButton.Text = "Đánh nhanh + Hồi chiêu: OFF"
-	fastButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	fastButton.TextSize = 15
-	fastButton.Font = Enum.Font.GothamBold
-	fastButton.Parent = frame
-	Instance.new("UICorner", fastButton).CornerRadius = UDim.new(0, 10)
+	-- ===== Size Label =====
+	local sizeLabel = Instance.new("TextLabel")
+	sizeLabel.Size = UDim2.new(1, 0, 0, 26)
+	sizeLabel.Position = UDim2.new(0, 0, 0.30, 0)
+	sizeLabel.BackgroundTransparency = 1
+	sizeLabel.Text = "Size: 60  |  Cực Mạnh"
+	sizeLabel.TextColor3 = Color3.fromRGB(255, 220, 220)
+	sizeLabel.TextSize = 15
+	sizeLabel.Font = Enum.Font.Gotham
+	sizeLabel.Parent = frame
 
+	-- ===== Slider =====
+	local sliderBack = Instance.new("Frame")
+	sliderBack.Size = UDim2.new(0.88, 0, 0, 14)
+	sliderBack.Position = UDim2.new(0.06, 0, 0.40, 0)
+	sliderBack.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+	sliderBack.BorderSizePixel = 0
+	sliderBack.Parent = frame
+
+	local sliderBackCorner = Instance.new("UICorner")
+	sliderBackCorner.CornerRadius = UDim.new(1, 0)
+	sliderBackCorner.Parent = sliderBack
+
+	local sliderFill = Instance.new("Frame")
+	sliderFill.Size = UDim2.new(0.35, 0, 1, 0)
+	sliderFill.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+	sliderFill.BorderSizePixel = 0
+	sliderFill.Parent = sliderBack
+
+	local sliderFillCorner = Instance.new("UICorner")
+	sliderFillCorner.CornerRadius = UDim.new(1, 0)
+	sliderFillCorner.Parent = sliderFill
+
+	local sliderBtn = Instance.new("TextButton")
+	sliderBtn.Size = UDim2.new(0, 26, 0, 26)
+	sliderBtn.Position = UDim2.new(0.35, -13, 0.5, -13)
+	sliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	sliderBtn.Text = ""
+	sliderBtn.AutoButtonColor = false
+	sliderBtn.Parent = sliderBack
+
+	local sliderBtnCorner = Instance.new("UICorner")
+	sliderBtnCorner.CornerRadius = UDim.new(1, 0)
+	sliderBtnCorner.Parent = sliderBtn
+
+	-- ===== Visual Toggle =====
+	local visualBtn = Instance.new("TextButton")
+	visualBtn.Size = UDim2.new(0.88, 0, 0, 38)
+	visualBtn.Position = UDim2.new(0.06, 0, 0.52, 0)
+	visualBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 90)
+	visualBtn.Text = "VISUALISE: ON"
+	visualBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	visualBtn.TextSize = 15
+	visualBtn.Font = Enum.Font.GothamBold
+	visualBtn.Parent = frame
+
+	local visualCorner = Instance.new("UICorner")
+	visualCorner.CornerRadius = UDim.new(0, 9)
+	visualCorner.Parent = visualBtn
+
+	-- ===== Always On =====
+	local alwaysBtn = Instance.new("TextButton")
+	alwaysBtn.Size = UDim2.new(0.88, 0, 0, 38)
+	alwaysBtn.Position = UDim2.new(0.06, 0, 0.66, 0)
+	alwaysBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 200)
+	alwaysBtn.Text = "ALWAYS ON: ON"
+	alwaysBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	alwaysBtn.TextSize = 15
+	alwaysBtn.Font = Enum.Font.GothamBold
+	alwaysBtn.Parent = frame
+
+	local alwaysCorner = Instance.new("UICorner")
+	alwaysCorner.CornerRadius = UDim.new(0, 9)
+	alwaysCorner.Parent = alwaysBtn
+
+	-- Status
 	local statusLabel = Instance.new("TextLabel")
-	statusLabel.Size = UDim2.new(1, 0, 0, 25)
-	statusLabel.Position = UDim2.new(0, 0, 0.80, 0)
+	statusLabel.Size = UDim2.new(1, 0, 0, 22)
+	statusLabel.Position = UDim2.new(0, 0, 0.82, 0)
 	statusLabel.BackgroundTransparency = 1
-	statusLabel.Text = "Speed: 16 | Reach: 20"
-	statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-	statusLabel.TextSize = 14
+	statusLabel.Text = "Đang hoạt động | Size lớn"
+	statusLabel.TextColor3 = Color3.fromRGB(160, 160, 170)
+	statusLabel.TextSize = 13
 	statusLabel.Font = Enum.Font.Gotham
 	statusLabel.Parent = frame
 
-	local closeButton = Instance.new("TextButton")
-	closeButton.Size = UDim2.new(0, 36, 0, 36)
-	closeButton.Position = UDim2.new(1, -42, 0, 6)
-	closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-	closeButton.Text = "X"
-	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	closeButton.TextSize = 18
-	closeButton.Font = Enum.Font.GothamBold
-	closeButton.Parent = frame
-	Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
+	-- ==================== HITBOX LOGIC ====================
+	local function createHitbox(character)
+		if not character or hitboxes[character] then return end
 
-	-- ========== Chức năng ==========
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not root then return end
+
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.Health <= 0 then return end
+
+		-- Hitbox chính (lớn + cao)
+		local box = Instance.new("Part")
+		box.Name = "GodHitbox"
+		box.Size = Vector3.new(Settings.Size, Settings.Size * Settings.HeightMultiplier, Settings.Size)
+		box.Transparency = Settings.ShowVisual and Settings.Transparency or 1
+		box.Color = Settings.Color
+		box.Material = Enum.Material.ForceField
+		box.CanCollide = false
+		box.Massless = true
+		box.Anchored = false
+		box.CastShadow = false
+		box.Parent = character
+
+		local weld = Instance.new("Weld")
+		weld.Part0 = root
+		weld.Part1 = box
+		weld.C0 = CFrame.new(0, 0.6, 0)
+		weld.Parent = box
+
+		hitboxes[character] = {
+			Part = box,
+			Weld = weld
+		}
+	end
+
+	local function removeHitbox(character)
+		if hitboxes[character] then
+			pcall(function()
+				if hitboxes[character].Part then
+					hitboxes[character].Part:Destroy()
+				end
+			end)
+			hitboxes[character] = nil
+		end
+	end
+
+	local function updateAllHitboxes()
+		for character, data in pairs(hitboxes) do
+			if data.Part and data.Part.Parent then
+				data.Part.Size = Vector3.new(Settings.Size, Settings.Size * Settings.HeightMultiplier, Settings.Size)
+				data.Part.Transparency = Settings.ShowVisual and Settings.Transparency or 1
+				data.Part.Color = Settings.Color
+			else
+				hitboxes[character] = nil
+			end
+		end
+	end
+
+	local function clearAllHitboxes()
+		for character, _ in pairs(hitboxes) do
+			removeHitbox(character)
+		end
+	end
+
+	-- Vòng lặp chính
+	local lastUpdate = 0
+	connections.Heartbeat = RunService.Heartbeat:Connect(function()
+		if not Settings.Enabled then
+			clearAllHitboxes()
+			return
+		end
+
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr \~= player and plr.Character then
+				local char = plr.Character
+				local humanoid = char:FindFirstChildOfClass("Humanoid")
+				if humanoid and humanoid.Health > 0 then
+					createHitbox(char)
+				else
+					removeHitbox(char)
+				end
+			end
+		end
+	end)
+
+	-- Khi người chơi rời
+	connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(plr)
+		if plr.Character then
+			removeHitbox(plr.Character)
+		end
+	end)
+
+	-- ==================== SLIDER ====================
+	local dragging = false
+
+	local function updateSlider(inputX)
+		local absPos = sliderBack.AbsolutePosition.X
+		local absSize = sliderBack.AbsoluteSize.X
+		local relative = math.clamp((inputX - absPos) / absSize, 0, 1)
+
+		sliderFill.Size = UDim2.new(relative, 0, 1, 0)
+		sliderBtn.Position = UDim2.new(relative, -13, 0.5, -13)
+
+		Settings.Size = math.floor(15 + (180 - 15) * relative)
+
+		local statusText = "Size: " .. Settings.Size
+		if Settings.Size >= 100 then
+			statusText = statusText .. "  |  CỰC MẠNH"
+		elseif Settings.Size >= 70 then
+			statusText = statusText .. "  |  Rất Mạnh"
+		end
+		sizeLabel.Text = statusText
+
+		updateAllHitboxes()
+	end
+
+	sliderBtn.MouseButton1Down:Connect(function()
+		dragging = true
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			updateSlider(input.Position.X)
+		end
+	end)
+
+	sliderBack.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			updateSlider(input.Position.X)
+		end
+	end)
+
+	-- ==================== NÚT ====================
 	local function toggleMenu()
 		frame.Visible = not frame.Visible
 	end
 
 	openButton.MouseButton1Click:Connect(toggleMenu)
 
-	setButton.MouseButton1Click:Connect(function()
-		local speed = tonumber(textBox.Text)
-		if speed then
-			currentSpeed = math.clamp(speed, 0, 500)
-			statusLabel.Text = "Speed: " .. currentSpeed .. " | Reach: " .. reachValue
-			setButton.Text = "Đã set!"
-			task.wait(0.7)
-			setButton.Text = "Set Speed"
-			textBox.Text = ""
-		end
-	end)
-
-	reachButton.MouseButton1Click:Connect(function()
-		local val = tonumber(reachBox.Text)
-		if val then
-			reachValue = math.clamp(val, 8, 60)
-			reachBox.Text = ""
-		end
-		reachEnabled = not reachEnabled
-		reachButton.Text = reachEnabled and ("Đánh xa: ON (" .. reachValue .. ")") or "Đánh xa: OFF"
-		reachButton.BackgroundColor3 = reachEnabled and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 55)
-		statusLabel.Text = "Speed: " .. currentSpeed .. " | Reach: " .. reachValue
-	end)
-
-	fastButton.MouseButton1Click:Connect(function()
-		fastAttack = not fastAttack
-		fastButton.Text = fastAttack and "Đánh nhanh + Hồi chiêu: ON" or "Đánh nhanh + Hồi chiêu: OFF"
-		fastButton.BackgroundColor3 = fastAttack and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 55)
-	end)
-
 	closeButton.MouseButton1Click:Connect(function()
 		frame.Visible = false
 	end)
 
-	-- Spam đánh
-	local function spamAttack()
-		pcall(function()
-			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
-
-			local keys = {
-				Enum.KeyCode.Q, Enum.KeyCode.E, Enum.KeyCode.R, 
-				Enum.KeyCode.F, Enum.KeyCode.One, Enum.KeyCode.Two
-			}
-			for _, key in ipairs(keys) do
-				VirtualInputManager:SendKeyEvent(true, key, false, game)
-				VirtualInputManager:SendKeyEvent(false, key, false, game)
-			end
-		end)
-	end
-
-	-- Phóng to hitbox
-	local function expandHitboxes()
-		local character = player.Character
-		if not character then return end
-		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				local name = string.lower(part.Name)
-				if name:find("hit") or name:find("attack") or name:find("damage") 
-				or name:find("slash") or name:find("punch") or name:find("box") then
-					part.Size = Vector3.new(reachValue, reachValue, reachValue)
-					part.Transparency = 0.6
-					part.CanCollide = false
-				end
-			end
-		end
-	end
-
-	-- ========== Logic ==========
-	RunService.Heartbeat:Connect(function()
-		local character = player.Character
-		if not character then return end
-
-		local humanoid = character:FindFirstChildOfClass("Humanoid")
-
-		if humanoid then
-			humanoid.WalkSpeed = currentSpeed
-			humanoid.JumpPower = currentJump
-			humanoid.JumpHeight = 7.2
-		end
-
-		if reachEnabled then
-			expandHitboxes()
-		end
-
-		if fastAttack and tick() - lastAttack >= 0.11 then
-			lastAttack = tick()
-			spamAttack()
-
-			local tool = character:FindFirstChildOfClass("Tool")
-			if tool then
-				pcall(function() tool:Activate() end)
-			end
+	expandBtn.MouseButton1Click:Connect(function()
+		Settings.Enabled = not Settings.Enabled
+		if Settings.Enabled then
+			expandBtn.Text = "EXPAND HITBOX: ON"
+			expandBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+			statusLabel.Text = "Đang hoạt động | Size lớn"
+		else
+			expandBtn.Text = "EXPAND HITBOX: OFF"
+			expandBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+			statusLabel.Text = "Đã tắt"
+			clearAllHitboxes()
 		end
 	end)
 
-	player.CharacterAdded:Connect(function(char)
-		task.wait(0.6)
-		local hum = char:WaitForChild("Humanoid", 5)
-		if hum then
-			hum.WalkSpeed = currentSpeed
-			hum.JumpPower = currentJump
+	visualBtn.MouseButton1Click:Connect(function()
+		Settings.ShowVisual = not Settings.ShowVisual
+		if Settings.ShowVisual then
+			visualBtn.Text = "VISUALISE: ON"
+			visualBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 90)
+		else
+			visualBtn.Text = "VISUALISE: OFF"
+			visualBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
 		end
+		updateAllHitboxes()
+	end)
+
+	alwaysBtn.MouseButton1Click:Connect(function()
+		Settings.AlwaysOn = not Settings.AlwaysOn
+		if Settings.AlwaysOn then
+			alwaysBtn.Text = "ALWAYS ON: ON"
+			alwaysBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 200)
+			Settings.Enabled = true
+			expandBtn.Text = "EXPAND HITBOX: ON"
+			expandBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+		else
+			alwaysBtn.Text = "ALWAYS ON: OFF"
+			alwaysBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+		end
+	end)
+
+	-- Khởi tạo slider ở size 60
+	task.defer(function()
+		task.wait(0.4)
+		local relative = (60 - 15) / (180 - 15)
+		updateSlider(sliderBack.AbsolutePosition.X + sliderBack.AbsoluteSize.X * relative)
 	end)
 end)
 
 if not success then
-	warn("Lỗi:", err)
+	warn("Hitbox God Max Error:", err)
 end
 ]])()
