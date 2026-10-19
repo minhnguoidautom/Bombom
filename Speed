@@ -3,7 +3,7 @@ local success, err = pcall(function()
 	local Players = game:GetService("Players")
 	local UserInputService = game:GetService("UserInputService")
 	local RunService = game:GetService("RunService")
-	local Workspace = game:GetService("Workspace")
+	local VirtualInputManager = game:GetService("VirtualInputManager")
 
 	local player = Players.LocalPlayer
 	local parentGui = (gethui and gethui()) or player:WaitForChild("PlayerGui")
@@ -14,147 +14,127 @@ local success, err = pcall(function()
 
 	local currentSpeed = 16
 	local currentJump = 50
-	local speedEnabled = true
-	local instantInteract = false
 	local reachEnabled = false
-	local reachValue = 15
+	local reachValue = 20
 	local fastAttack = false
-	local noCooldown = false
 	local lastAttack = 0
 
-	-- ========== GUI ==========
+	-- ========== GUI (tối ưu điện thoại) ==========
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "SpeedMenuGui"
 	screenGui.ResetOnSpawn = false
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.Parent = parentGui
 
+	-- Nút nổi to hơn cho điện thoại
 	local openButton = Instance.new("TextButton")
-	openButton.Size = UDim2.new(0, 55, 0, 55)
-	openButton.Position = UDim2.new(1, -70, 0.4, 0)
+	openButton.Size = UDim2.new(0, 65, 0, 65)
+	openButton.Position = UDim2.new(1, -80, 0.45, 0)
 	openButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-	openButton.Text = "SPD"
+	openButton.Text = "MENU"
 	openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	openButton.TextSize = 16
+	openButton.TextSize = 15
 	openButton.Font = Enum.Font.GothamBold
 	openButton.Parent = screenGui
 	Instance.new("UICorner", openButton).CornerRadius = UDim.new(1, 0)
 
+	-- Frame chính
 	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(0, 300, 0, 420)
-	frame.Position = UDim2.new(0.5, -150, 0.5, -210)
-	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	frame.Size = UDim2.new(0, 320, 0, 400)
+	frame.Position = UDim2.new(0.5, -160, 0.5, -200)
+	frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 	frame.BorderSizePixel = 0
 	frame.Visible = false
 	frame.Parent = screenGui
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, 0, 0, 36)
+	title.Size = UDim2.new(1, 0, 0, 40)
 	title.BackgroundTransparency = 1
-	title.Text = "Speed + Combat Menu"
+	title.Text = "Choose An Ability"
 	title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	title.TextSize = 18
+	title.TextSize = 20
 	title.Font = Enum.Font.GothamBold
 	title.Parent = frame
 
+	-- Speed
 	local textBox = Instance.new("TextBox")
-	textBox.Size = UDim2.new(0.8, 0, 0, 34)
-	textBox.Position = UDim2.new(0.1, 0, 0.10, 0)
-	textBox.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+	textBox.Size = UDim2.new(0.85, 0, 0, 42)
+	textBox.Position = UDim2.new(0.075, 0, 0.13, 0)
+	textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 	textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-	textBox.PlaceholderText = "Nhập số speed..."
-	textBox.TextSize = 15
+	textBox.PlaceholderText = "Nhập số Speed..."
+	textBox.TextSize = 17
 	textBox.Font = Enum.Font.Gotham
 	textBox.Parent = frame
-	Instance.new("UICorner", textBox).CornerRadius = UDim.new(0, 8)
+	Instance.new("UICorner", textBox).CornerRadius = UDim.new(0, 10)
 
 	local setButton = Instance.new("TextButton")
-	setButton.Size = UDim2.new(0.8, 0, 0, 34)
-	setButton.Position = UDim2.new(0.1, 0, 0.20, 0)
-	setButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+	setButton.Size = UDim2.new(0.85, 0, 0, 42)
+	setButton.Position = UDim2.new(0.075, 0, 0.26, 0)
+	setButton.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
 	setButton.Text = "Set Speed"
 	setButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	setButton.TextSize = 15
+	setButton.TextSize = 17
 	setButton.Font = Enum.Font.GothamBold
 	setButton.Parent = frame
-	Instance.new("UICorner", setButton).CornerRadius = UDim.new(0, 8)
+	Instance.new("UICorner", setButton).CornerRadius = UDim.new(0, 10)
 
+	-- Reach
 	local reachBox = Instance.new("TextBox")
-	reachBox.Size = UDim2.new(0.8, 0, 0, 34)
-	reachBox.Position = UDim2.new(0.1, 0, 0.31, 0)
-	reachBox.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+	reachBox.Size = UDim2.new(0.85, 0, 0, 42)
+	reachBox.Position = UDim2.new(0.075, 0, 0.40, 0)
+	reachBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 	reachBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-	reachBox.PlaceholderText = "Nhập số đánh xa (vd: 20)"
-	reachBox.TextSize = 15
+	reachBox.PlaceholderText = "Nhập số Đánh xa (10-50)"
+	reachBox.TextSize = 16
 	reachBox.Font = Enum.Font.Gotham
 	reachBox.Parent = frame
-	Instance.new("UICorner", reachBox).CornerRadius = UDim.new(0, 8)
+	Instance.new("UICorner", reachBox).CornerRadius = UDim.new(0, 10)
 
 	local reachButton = Instance.new("TextButton")
-	reachButton.Size = UDim2.new(0.8, 0, 0, 34)
-	reachButton.Position = UDim2.new(0.1, 0, 0.41, 0)
+	reachButton.Size = UDim2.new(0.85, 0, 0, 42)
+	reachButton.Position = UDim2.new(0.075, 0, 0.53, 0)
 	reachButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
 	reachButton.Text = "Đánh xa: OFF"
 	reachButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	reachButton.TextSize = 15
+	reachButton.TextSize = 16
 	reachButton.Font = Enum.Font.GothamBold
 	reachButton.Parent = frame
-	Instance.new("UICorner", reachButton).CornerRadius = UDim.new(0, 8)
+	Instance.new("UICorner", reachButton).CornerRadius = UDim.new(0, 10)
 
+	-- Fast Attack
 	local fastButton = Instance.new("TextButton")
-	fastButton.Size = UDim2.new(0.8, 0, 0, 34)
-	fastButton.Position = UDim2.new(0.1, 0, 0.52, 0)
+	fastButton.Size = UDim2.new(0.85, 0, 0, 42)
+	fastButton.Position = UDim2.new(0.075, 0, 0.66, 0)
 	fastButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-	fastButton.Text = "Đánh nhanh (0.1s): OFF"
+	fastButton.Text = "Đánh nhanh + Hồi chiêu: OFF"
 	fastButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	fastButton.TextSize = 14
+	fastButton.TextSize = 15
 	fastButton.Font = Enum.Font.GothamBold
 	fastButton.Parent = frame
-	Instance.new("UICorner", fastButton).CornerRadius = UDim.new(0, 8)
-
-	local cdButton = Instance.new("TextButton")
-	cdButton.Size = UDim2.new(0.8, 0, 0, 34)
-	cdButton.Position = UDim2.new(0.1, 0, 0.63, 0)
-	cdButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-	cdButton.Text = "Hồi chiêu nhanh: OFF"
-	cdButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	cdButton.TextSize = 14
-	cdButton.Font = Enum.Font.GothamBold
-	cdButton.Parent = frame
-	Instance.new("UICorner", cdButton).CornerRadius = UDim.new(0, 8)
-
-	local interactButton = Instance.new("TextButton")
-	interactButton.Size = UDim2.new(0.8, 0, 0, 34)
-	interactButton.Position = UDim2.new(0.1, 0, 0.74, 0)
-	interactButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-	interactButton.Text = "Instant Interact: OFF"
-	interactButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	interactButton.TextSize = 14
-	interactButton.Font = Enum.Font.GothamBold
-	interactButton.Parent = frame
-	Instance.new("UICorner", interactButton).CornerRadius = UDim.new(0, 8)
+	Instance.new("UICorner", fastButton).CornerRadius = UDim.new(0, 10)
 
 	local statusLabel = Instance.new("TextLabel")
-	statusLabel.Size = UDim2.new(1, 0, 0, 22)
-	statusLabel.Position = UDim2.new(0, 0, 0.85, 0)
+	statusLabel.Size = UDim2.new(1, 0, 0, 25)
+	statusLabel.Position = UDim2.new(0, 0, 0.80, 0)
 	statusLabel.BackgroundTransparency = 1
-	statusLabel.Text = "Speed: 16 | Reach: 15"
+	statusLabel.Text = "Speed: 16 | Reach: 20"
 	statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-	statusLabel.TextSize = 13
+	statusLabel.TextSize = 14
 	statusLabel.Font = Enum.Font.Gotham
 	statusLabel.Parent = frame
 
 	local closeButton = Instance.new("TextButton")
-	closeButton.Size = UDim2.new(0, 30, 0, 30)
-	closeButton.Position = UDim2.new(1, -36, 0, 4)
+	closeButton.Size = UDim2.new(0, 36, 0, 36)
+	closeButton.Position = UDim2.new(1, -42, 0, 6)
 	closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
 	closeButton.Text = "X"
 	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	closeButton.TextSize = 15
+	closeButton.TextSize = 18
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.Parent = frame
-	Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 6)
+	Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 8)
 
 	-- ========== Chức năng ==========
 	local function toggleMenu()
@@ -162,10 +142,6 @@ local success, err = pcall(function()
 	end
 
 	openButton.MouseButton1Click:Connect(toggleMenu)
-	UserInputService.InputBegan:Connect(function(input, gp)
-		if gp then return end
-		if input.KeyCode == Enum.KeyCode.P then toggleMenu() end
-	end)
 
 	setButton.MouseButton1Click:Connect(function()
 		local speed = tonumber(textBox.Text)
@@ -173,7 +149,7 @@ local success, err = pcall(function()
 			currentSpeed = math.clamp(speed, 0, 500)
 			statusLabel.Text = "Speed: " .. currentSpeed .. " | Reach: " .. reachValue
 			setButton.Text = "Đã set!"
-			task.wait(0.6)
+			task.wait(0.7)
 			setButton.Text = "Set Speed"
 			textBox.Text = ""
 		end
@@ -182,7 +158,7 @@ local success, err = pcall(function()
 	reachButton.MouseButton1Click:Connect(function()
 		local val = tonumber(reachBox.Text)
 		if val then
-			reachValue = math.clamp(val, 5, 80)
+			reachValue = math.clamp(val, 8, 60)
 			reachBox.Text = ""
 		end
 		reachEnabled = not reachEnabled
@@ -193,130 +169,78 @@ local success, err = pcall(function()
 
 	fastButton.MouseButton1Click:Connect(function()
 		fastAttack = not fastAttack
-		fastButton.Text = fastAttack and "Đánh nhanh (0.1s): ON" or "Đánh nhanh (0.1s): OFF"
+		fastButton.Text = fastAttack and "Đánh nhanh + Hồi chiêu: ON" or "Đánh nhanh + Hồi chiêu: OFF"
 		fastButton.BackgroundColor3 = fastAttack and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 55)
-	end)
-
-	cdButton.MouseButton1Click:Connect(function()
-		noCooldown = not noCooldown
-		cdButton.Text = noCooldown and "Hồi chiêu nhanh: ON" or "Hồi chiêu nhanh: OFF"
-		cdButton.BackgroundColor3 = noCooldown and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 55)
-	end)
-
-	interactButton.MouseButton1Click:Connect(function()
-		instantInteract = not instantInteract
-		interactButton.Text = instantInteract and "Instant Interact: ON" or "Instant Interact: OFF"
-		interactButton.BackgroundColor3 = instantInteract and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 55)
 	end)
 
 	closeButton.MouseButton1Click:Connect(function()
 		frame.Visible = false
 	end)
 
-	-- Hàm xóa cooldown mạnh hơn
-	local function clearCooldown(container)
-		if not container then return end
-		for _, v in ipairs(container:GetDescendants()) do
-			-- NumberValue / IntValue
-			if v:IsA("NumberValue") or v:IsA("IntValue") then
-				local name = string.lower(v.Name)
-				if name:find("cool") or name:find("cd") or name:find("delay") 
-				or name:find("timer") or name:find("reload") or name:find("wait")
-				or name:find("time") or name:find("duration") then
-					v.Value = 0
-				end
-			end
+	-- Spam đánh
+	local function spamAttack()
+		pcall(function()
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+			VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
 
-			-- BoolValue
-			if v:IsA("BoolValue") then
-				local name = string.lower(v.Name)
-				if name:find("cool") or name:find("cd") or name:find("debounce")
-				or name:find("busy") or name:find("active") or name:find("using") then
-					v.Value = false
-				end
+			local keys = {
+				Enum.KeyCode.Q, Enum.KeyCode.E, Enum.KeyCode.R, 
+				Enum.KeyCode.F, Enum.KeyCode.One, Enum.KeyCode.Two
+			}
+			for _, key in ipairs(keys) do
+				VirtualInputManager:SendKeyEvent(true, key, false, game)
+				VirtualInputManager:SendKeyEvent(false, key, false, game)
 			end
+		end)
+	end
 
-			-- Attribute
-			for attrName, attrValue in pairs(v:GetAttributes()) do
-				local an = string.lower(attrName)
-				if an:find("cool") or an:find("cd") or an:find("delay") 
-				or an:find("timer") or an:find("reload") or an:find("busy") then
-					if type(attrValue) == "number" then
-						v:SetAttribute(attrName, 0)
-					elseif type(attrValue) == "boolean" then
-						v:SetAttribute(attrName, false)
-					end
+	-- Phóng to hitbox
+	local function expandHitboxes()
+		local character = player.Character
+		if not character then return end
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				local name = string.lower(part.Name)
+				if name:find("hit") or name:find("attack") or name:find("damage") 
+				or name:find("slash") or name:find("punch") or name:find("box") then
+					part.Size = Vector3.new(reachValue, reachValue, reachValue)
+					part.Transparency = 0.6
+					part.CanCollide = false
 				end
 			end
 		end
 	end
 
-	-- ========== Logic chính ==========
+	-- ========== Logic ==========
 	RunService.Heartbeat:Connect(function()
 		local character = player.Character
 		if not character then return end
 
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
-		local root = character:FindFirstChild("HumanoidRootPart")
 
-		-- Force di chuyển + nhảy
 		if humanoid then
 			humanoid.WalkSpeed = currentSpeed
 			humanoid.JumpPower = currentJump
 			humanoid.JumpHeight = 7.2
 		end
 
-		-- Instant Interact
-		if instantInteract then
-			for _, obj in ipairs(Workspace:GetDescendants()) do
-				if obj:IsA("ProximityPrompt") then
-					obj.HoldDuration = 0
-				end
-			end
+		if reachEnabled then
+			expandHitboxes()
 		end
 
-		-- Hồi chiêu nhanh (mạnh hơn)
-		if noCooldown then
-			clearCooldown(character)
-			if player:FindFirstChild("Backpack") then
-				clearCooldown(player.Backpack)
-			end
-			if player:FindFirstChild("PlayerGui") then
-				clearCooldown(player.PlayerGui)
-			end
-		end
+		if fastAttack and tick() - lastAttack >= 0.11 then
+			lastAttack = tick()
+			spamAttack()
 
-		-- Đánh xa + Đánh nhanh
-		if (fastAttack or reachEnabled) and root and tick() - lastAttack >= 0.12 then
-			local hasTarget = false
-			for _, other in ipairs(Players:GetPlayers()) do
-				if other ~= player and other.Character then
-					local otherRoot = other.Character:FindFirstChild("HumanoidRootPart")
-					local otherHum = other.Character:FindFirstChildOfClass("Humanoid")
-					if otherRoot and otherHum and otherHum.Health > 0 then
-						local dist = (root.Position - otherRoot.Position).Magnitude
-						if dist <= reachValue then
-							hasTarget = true
-							break
-						end
-					end
-				end
-			end
-
-			if hasTarget then
-				lastAttack = tick()
-				local tool = character:FindFirstChildOfClass("Tool")
-				if tool then
-					pcall(function()
-						tool:Activate()
-					end)
-				end
+			local tool = character:FindFirstChildOfClass("Tool")
+			if tool then
+				pcall(function() tool:Activate() end)
 			end
 		end
 	end)
 
 	player.CharacterAdded:Connect(function(char)
-		task.wait(0.5)
+		task.wait(0.6)
 		local hum = char:WaitForChild("Humanoid", 5)
 		if hum then
 			hum.WalkSpeed = currentSpeed
