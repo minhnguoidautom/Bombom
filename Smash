@@ -21,14 +21,13 @@ local success, err = pcall(function()
 		HitboxSize = 48,
 		WalkSpeed = 34,
 		AttackDelay = 0.13,
-		TargetMode = "Closest", -- "Closest" hoặc tên người chơi
+		TargetMode = "Closest",
 		SelectedTarget = nil,
 	}
 
 	local hitboxes = {}
 	local lastAttack = 0
 
-	-- ===== GUI =====
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "SmashAimGui"
 	screenGui.ResetOnSpawn = false
@@ -73,7 +72,6 @@ local success, err = pcall(function()
 	closeBtn.Parent = frame
 	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 7)
 
-	-- Toggles
 	local function createToggle(name, yPos, default, callback)
 		local btn = Instance.new("TextButton")
 		btn.Size = UDim2.new(0.86, 0, 0, 34)
@@ -93,7 +91,6 @@ local success, err = pcall(function()
 			btn.BackgroundColor3 = state and Color3.fromRGB(0, 170, 90) or Color3.fromRGB(60, 60, 70)
 			callback(state)
 		end)
-		return btn
 	end
 
 	createToggle("Kill Aura", 0.12, false, function(v) Settings.KillAura = v end)
@@ -101,7 +98,6 @@ local success, err = pcall(function()
 	createToggle("Speed", 0.32, true, function(v) Settings.Speed = v end)
 	createToggle("Inf Jump", 0.42, true, function(v) Settings.InfJump = v end)
 
-	-- Target Label
 	local targetLabel = Instance.new("TextLabel")
 	targetLabel.Size = UDim2.new(1, 0, 0, 22)
 	targetLabel.Position = UDim2.new(0, 0, 0.53, 0)
@@ -112,7 +108,6 @@ local success, err = pcall(function()
 	targetLabel.Font = Enum.Font.Gotham
 	targetLabel.Parent = frame
 
-	-- Nút chọn Closest
 	local closestBtn = Instance.new("TextButton")
 	closestBtn.Size = UDim2.new(0.86, 0, 0, 32)
 	closestBtn.Position = UDim2.new(0.07, 0, 0.60, 0)
@@ -124,7 +119,6 @@ local success, err = pcall(function()
 	closestBtn.Parent = frame
 	Instance.new("UICorner", closestBtn).CornerRadius = UDim.new(0, 7)
 
-	-- ScrollingFrame danh sách người chơi
 	local playerList = Instance.new("ScrollingFrame")
 	playerList.Size = UDim2.new(0.86, 0, 0, 90)
 	playerList.Position = UDim2.new(0.07, 0, 0.70, 0)
@@ -141,9 +135,7 @@ local success, err = pcall(function()
 
 	local function refreshPlayerList()
 		for _, child in ipairs(playerList:GetChildren()) do
-			if child:IsA("TextButton") then
-				child:Destroy()
-			end
+			if child:IsA("TextButton") then child:Destroy() end
 		end
 
 		local ySize = 0
@@ -165,7 +157,6 @@ local success, err = pcall(function()
 					targetLabel.Text = "Mục tiêu: " .. plr.Name
 					closestBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
 				end)
-
 				ySize = ySize + 32
 			end
 		end
@@ -179,7 +170,6 @@ local success, err = pcall(function()
 		closestBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 220)
 	end)
 
-	-- Nút làm mới danh sách
 	local refreshBtn = Instance.new("TextButton")
 	refreshBtn.Size = UDim2.new(0.86, 0, 0, 28)
 	refreshBtn.Position = UDim2.new(0.07, 0, 0.93, 0)
@@ -190,10 +180,8 @@ local success, err = pcall(function()
 	refreshBtn.Font = Enum.Font.Gotham
 	refreshBtn.Parent = frame
 	Instance.new("UICorner", refreshBtn).CornerRadius = UDim.new(0, 6)
-
 	refreshBtn.MouseButton1Click:Connect(refreshPlayerList)
 
-	-- ===== Logic =====
 	local function createHitbox(char)
 		if not char or hitboxes[char] then return end
 		local root = char:FindFirstChild("HumanoidRootPart")
@@ -214,7 +202,6 @@ local success, err = pcall(function()
 		weld.Part1 = box
 		weld.C0 = CFrame.new(0, 0.5, 0)
 		weld.Parent = box
-
 		hitboxes[char] = box
 	end
 
@@ -230,17 +217,13 @@ local success, err = pcall(function()
 			local t = Settings.SelectedTarget
 			if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
 				local hum = t.Character:FindFirstChildOfClass("Humanoid")
-				if hum and hum.Health > 0 then
-					return t
-				end
+				if hum and hum.Health > 0 then return t end
 			end
-			-- Nếu target chết thì quay về closest
 			Settings.TargetMode = "Closest"
 			Settings.SelectedTarget = nil
 			targetLabel.Text = "Mục tiêu: Gần nhất"
 		end
 
-		-- Closest mode
 		local closest, dist = nil, Settings.AuraRange
 		local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if not myRoot then return nil end
@@ -332,16 +315,13 @@ local success, err = pcall(function()
 
 	openBtn.MouseButton1Click:Connect(function()
 		frame.Visible = not frame.Visible
-		if frame.Visible then
-			refreshPlayerList()
-		end
+		if frame.Visible then refreshPlayerList() end
 	end)
 
 	closeBtn.MouseButton1Click:Connect(function()
 		frame.Visible = false
 	end)
 
-	-- Tự làm mới danh sách khi có người vào/ra
 	Players.PlayerAdded:Connect(function()
 		task.wait(1)
 		if frame.Visible then refreshPlayerList() end
