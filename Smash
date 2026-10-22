@@ -1,272 +1,312 @@
 loadstring([[
--- ======================
--- PROJECT SMASH - BẢN ỔN ĐỊNH
--- ======================
+local success, err = pcall(function()
+	local Players = game:GetService("Players")
+	local RunService = game:GetService("RunService")
+	local UserInputService = game:GetService("UserInputService")
+	local VirtualInputManager = game:GetService("VirtualInputManager")
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local VIM = game:GetService("VirtualInputManager")
+	local player = Players.LocalPlayer
+	local pg = player:WaitForChild("PlayerGui")
 
-local player = Players.LocalPlayer
-local pg = player:WaitForChild("PlayerGui", 10)
+	if pg:FindFirstChild("SmashAimGui") then
+		pg.SmashAimGui:Destroy()
+	end
 
--- Xóa GUI cũ
-pcall(function()
-	local old = pg:FindFirstChild("SmashStable")
-	if old then old:Destroy() end
-end)
+	local Settings = {
+		KillAura = false,
+		Hitbox = true,
+		Speed = true,
+		InfJump = true,
+		AuraRange = 26,
+		HitboxSize = 48,
+		WalkSpeed = 34,
+		AttackDelay = 0.13,
+		TargetMode = "Closest",
+		SelectedTarget = nil,
+	}
 
--- ========== TẠO GUI TRƯỚC (quan trọng) ==========
-local gui = Instance.new("ScreenGui")
-gui.Name = "SmashStable"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = pg
+	local hitboxes = {}
+	local lastAttack = 0
 
--- Nút nổi (to, dễ thấy)
-local openBtn = Instance.new("TextButton")
-openBtn.Name = "Open"
-openBtn.Size = UDim2.new(0, 70, 0, 70)
-openBtn.Position = UDim2.new(1, -85, 0.25, 0)
-openBtn.BackgroundColor3 = Color3.fromRGB(255, 40, 30)
-openBtn.Text = "SMASH"
-openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-openBtn.TextSize = 15
-openBtn.Font = Enum.Font.GothamBold
-openBtn.Parent = gui
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "SmashAimGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.IgnoreGuiInset = true
+	screenGui.Parent = pg
 
-local c1 = Instance.new("UICorner")
-c1.CornerRadius = UDim.new(1, 0)
-c1.Parent = openBtn
+	local openBtn = Instance.new("TextButton")
+	openBtn.Size = UDim2.new(0, 60, 0, 60)
+	openBtn.Position = UDim2.new(1, -75, 0.28, 0)
+	openBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 40)
+	openBtn.Text = "SMASH"
+	openBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	openBtn.TextSize = 13
+	openBtn.Font = Enum.Font.GothamBold
+	openBtn.Parent = screenGui
+	Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1,0)
 
--- Frame menu
-local frame = Instance.new("Frame")
-frame.Name = "Menu"
-frame.Size = UDim2.new(0, 270, 0, 340)
-frame.Position = UDim2.new(0.5, -135, 0.5, -170)
-frame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
-frame.Visible = false
-frame.Parent = gui
-
-local c2 = Instance.new("UICorner")
-c2.CornerRadius = UDim.new(0, 14)
-c2.Parent = frame
-
--- Title
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 42)
-title.BackgroundTransparency = 1
-title.Text = "PROJECT SMASH"
-title.TextColor3 = Color3.fromRGB(255, 70, 40)
-title.TextSize = 19
-title.Font = Enum.Font.GothamBold
-title.Parent = frame
-
--- Nút X
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 32, 0, 32)
-closeBtn.Position = UDim2.new(1, -38, 0, 6)
-closeBtn.BackgroundColor3 = Color3.fromRGB(200, 35, 35)
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-closeBtn.TextSize = 16
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = frame
-
-local c3 = Instance.new("UICorner")
-c3.CornerRadius = UDim.new(0, 8)
-c3.Parent = closeBtn
-
--- Status
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, 0, 0, 22)
-status.Position = UDim2.new(0, 0, 0.90, 0)
-status.BackgroundTransparency = 1
-status.Text = "Đã load - Bấm SMASH để mở"
-status.TextColor3 = Color3.fromRGB(150, 150, 160)
-status.TextSize = 12
-status.Font = Enum.Font.Gotham
-status.Parent = frame
-
--- ========== BIẾN ==========
-local KillAura = false
-local HitboxOn = true
-local SpeedOn = true
-local InfJump = true
-local Range = 25
-local HitboxSize = 46
-local SpeedValue = 36
-local Delay = 0.12
-local lastHit = 0
-local hitboxes = {}
-
--- ========== TẠO NÚT TOGGLE ==========
-local function makeToggle(name, y, default, callback)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.86, 0, 0, 40)
-	btn.Position = UDim2.new(0.07, 0, y, 0)
-	btn.BackgroundColor3 = default and Color3.fromRGB(0, 175, 90) or Color3.fromRGB(45, 45, 55)
-	btn.Text = name .. (default and "  •  ON" or "  •  OFF")
-	btn.TextColor3 = Color3.fromRGB(255,255,255)
-	btn.TextSize = 15
-	btn.Font = Enum.Font.GothamBold
-	btn.Parent = frame
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 9)
-	corner.Parent = btn
-
-	local on = default
-	btn.MouseButton1Click:Connect(function()
-		on = not on
-		btn.Text = name .. (on and "  •  ON" or "  •  OFF")
-		btn.BackgroundColor3 = on and Color3.fromRGB(0, 175, 90) or Color3.fromRGB(45, 45, 55)
-		callback(on)
-		status.Text = name .. (on and " đã BẬT" or " đã TẮT")
-	end)
-end
-
-makeToggle("Kill Aura", 0.15, false, function(v) KillAura = v end)
-makeToggle("Hitbox", 0.29, true, function(v) HitboxOn = v end)
-makeToggle("Speed", 0.43, true, function(v) SpeedOn = v end)
-makeToggle("Inf Jump", 0.57, true, function(v) InfJump = v end)
-
--- Nút Test
-local testBtn = Instance.new("TextButton")
-testBtn.Size = UDim2.new(0.86, 0, 0, 36)
-testBtn.Position = UDim2.new(0.07, 0, 0.72, 0)
-testBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 210)
-testBtn.Text = "TEST ĐÁNH"
-testBtn.TextColor3 = Color3.fromRGB(255,255,255)
-testBtn.TextSize = 14
-testBtn.Font = Enum.Font.GothamBold
-testBtn.Parent = frame
-
-local c4 = Instance.new("UICorner")
-c4.CornerRadius = UDim.new(0, 8)
-c4.Parent = testBtn
-
-testBtn.MouseButton1Click:Connect(function()
-	pcall(function()
-		VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-		task.wait(0.04)
-		VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-	end)
-	status.Text = "Đã test đánh"
-end)
-
--- Mở / Đóng menu
-openBtn.MouseButton1Click:Connect(function()
-	frame.Visible = not frame.Visible
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(0, 290, 0, 420)
+	frame.Position = UDim2.new(0.5, -145, 0.5, -210)
+	frame.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
 	frame.Visible = false
-end)
+	frame.Parent = screenGui
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 
--- ========== CHỨC NĂNG ==========
-local function addHitbox(char)
-	if not char or hitboxes[char] then return end
-	local root = char:FindFirstChild("HumanoidRootPart")
-	if not root then return end
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1,0,0,40)
+	title.BackgroundTransparency = 1
+	title.Text = "Project Smash Aim"
+	title.TextColor3 = Color3.fromRGB(255, 90, 50)
+	title.TextSize = 18
+	title.Font = Enum.Font.GothamBold
+	title.Parent = frame
 
-	local box = Instance.new("Part")
-	box.Name = "SmashHB"
-	box.Size = Vector3.new(HitboxSize, HitboxSize * 1.3, HitboxSize)
-	box.Transparency = 0.65
-	box.Color = Color3.fromRGB(255, 55, 30)
-	box.Material = Enum.Material.ForceField
-	box.CanCollide = false
-	box.Massless = true
-	box.Parent = char
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 30, 0, 30)
+	closeBtn.Position = UDim2.new(1, -36, 0, 5)
+	closeBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+	closeBtn.Text = "X"
+	closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	closeBtn.TextSize = 15
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.Parent = frame
+	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 7)
 
-	local weld = Instance.new("Weld")
-	weld.Part0 = root
-	weld.Part1 = box
-	weld.C0 = CFrame.new(0, 0.4, 0)
-	weld.Parent = box
+	local function createToggle(name, yPos, default, callback)
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0.86, 0, 0, 34)
+		btn.Position = UDim2.new(0.07, 0, yPos, 0)
+		btn.BackgroundColor3 = default and Color3.fromRGB(0, 170, 90) or Color3.fromRGB(60, 60, 70)
+		btn.Text = name .. (default and ": ON" or ": OFF")
+		btn.TextColor3 = Color3.fromRGB(255,255,255)
+		btn.TextSize = 14
+		btn.Font = Enum.Font.GothamBold
+		btn.Parent = frame
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
 
-	hitboxes[char] = box
-end
+		local state = default
+		btn.MouseButton1Click:Connect(function()
+			state = not state
+			btn.Text = name .. (state and ": ON" or ": OFF")
+			btn.BackgroundColor3 = state and Color3.fromRGB(0, 170, 90) or Color3.fromRGB(60, 60, 70)
+			callback(state)
+		end)
+	end
 
--- Inf Jump
-UIS.JumpRequest:Connect(function()
-	if InfJump and player.Character then
-		local hum = player.Character:FindFirstChildOfClass("Humanoid")
-		if hum then
-			hum:ChangeState(Enum.HumanoidStateType.Jumping)
+	createToggle("Kill Aura", 0.12, false, function(v) Settings.KillAura = v end)
+	createToggle("Hitbox", 0.22, true, function(v) Settings.Hitbox = v end)
+	createToggle("Speed", 0.32, true, function(v) Settings.Speed = v end)
+	createToggle("Inf Jump", 0.42, true, function(v) Settings.InfJump = v end)
+
+	local targetLabel = Instance.new("TextLabel")
+	targetLabel.Size = UDim2.new(1, 0, 0, 22)
+	targetLabel.Position = UDim2.new(0, 0, 0.53, 0)
+	targetLabel.BackgroundTransparency = 1
+	targetLabel.Text = "Mục tiêu: Gần nhất"
+	targetLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	targetLabel.TextSize = 13
+	targetLabel.Font = Enum.Font.Gotham
+	targetLabel.Parent = frame
+
+	local closestBtn = Instance.new("TextButton")
+	closestBtn.Size = UDim2.new(0.86, 0, 0, 32)
+	closestBtn.Position = UDim2.new(0.07, 0, 0.60, 0)
+	closestBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 220)
+	closestBtn.Text = "Aim: Người gần nhất"
+	closestBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	closestBtn.TextSize = 13
+	closestBtn.Font = Enum.Font.GothamBold
+	closestBtn.Parent = frame
+	Instance.new("UICorner", closestBtn).CornerRadius = UDim.new(0, 7)
+
+	local playerList = Instance.new("ScrollingFrame")
+	playerList.Size = UDim2.new(0.86, 0, 0, 90)
+	playerList.Position = UDim2.new(0.07, 0, 0.70, 0)
+	playerList.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+	playerList.BorderSizePixel = 0
+	playerList.ScrollBarThickness = 4
+	playerList.CanvasSize = UDim2.new(0, 0, 0, 0)
+	playerList.Parent = frame
+	Instance.new("UICorner", playerList).CornerRadius = UDim.new(0, 8)
+
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0, 4)
+	listLayout.Parent = playerList
+
+	local function refreshPlayerList()
+		for _, child in ipairs(playerList:GetChildren()) do
+			if child:IsA("TextButton") then child:Destroy() end
 		end
-	end
-end)
-
--- Main Loop
-RunService.Heartbeat:Connect(function()
-	local char = player.Character
-	if not char then return end
-
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	local root = char:FindFirstChild("HumanoidRootPart")
-	if not hum or not root then return end
-
-	-- Speed
-	if SpeedOn then
-		hum.WalkSpeed = SpeedValue
-	end
-
-	-- Hitbox
-	if HitboxOn then
+		local ySize = 0
 		for _, plr in ipairs(Players:GetPlayers()) do
-			if plr \~= player and plr.Character then
-				addHitbox(plr.Character)
+			if plr \~= player then
+				local btn = Instance.new("TextButton")
+				btn.Size = UDim2.new(1, -8, 0, 28)
+				btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+				btn.Text = plr.Name
+				btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+				btn.TextSize = 13
+				btn.Font = Enum.Font.Gotham
+				btn.Parent = playerList
+				Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+				btn.MouseButton1Click:Connect(function()
+					Settings.TargetMode = "Selected"
+					Settings.SelectedTarget = plr
+					targetLabel.Text = "Mục tiêu: " .. plr.Name
+					closestBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+				end)
+				ySize = ySize + 32
 			end
 		end
+		playerList.CanvasSize = UDim2.new(0, 0, 0, ySize)
 	end
 
-	-- Kill Aura
-	if KillAura and (tick() - lastHit) > Delay then
-		local closest = nil
-		local closestDist = Range
+	closestBtn.MouseButton1Click:Connect(function()
+		Settings.TargetMode = "Closest"
+		Settings.SelectedTarget = nil
+		targetLabel.Text = "Mục tiêu: Gần nhất"
+		closestBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 220)
+	end)
 
+	local refreshBtn = Instance.new("TextButton")
+	refreshBtn.Size = UDim2.new(0.86, 0, 0, 28)
+	refreshBtn.Position = UDim2.new(0.07, 0, 0.93, 0)
+	refreshBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+	refreshBtn.Text = "Làm mới danh sách"
+	refreshBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	refreshBtn.TextSize = 12
+	refreshBtn.Font = Enum.Font.Gotham
+	refreshBtn.Parent = frame
+	Instance.new("UICorner", refreshBtn).CornerRadius = UDim.new(0, 6)
+	refreshBtn.MouseButton1Click:Connect(refreshPlayerList)
+
+	local function createHitbox(char)
+		if not char or hitboxes[char] then return end
+		local root = char:FindFirstChild("HumanoidRootPart")
+		if not root then return end
+		local box = Instance.new("Part")
+		box.Name = "SmashHitbox"
+		box.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize * 1.3, Settings.HitboxSize)
+		box.Transparency = 0.7
+		box.Color = Color3.fromRGB(255, 70, 40)
+		box.Material = Enum.Material.ForceField
+		box.CanCollide = false
+		box.Massless = true
+		box.Parent = char
+		local weld = Instance.new("Weld")
+		weld.Part0 = root
+		weld.Part1 = box
+		weld.C0 = CFrame.new(0, 0.5, 0)
+		weld.Parent = box
+		hitboxes[char] = box
+	end
+
+	local function getTarget()
+		if Settings.TargetMode == "Selected" and Settings.SelectedTarget then
+			local t = Settings.SelectedTarget
+			if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
+				local hum = t.Character:FindFirstChildOfClass("Humanoid")
+				if hum and hum.Health > 0 then return t end
+			end
+			Settings.TargetMode = "Closest"
+			Settings.SelectedTarget = nil
+			targetLabel.Text = "Mục tiêu: Gần nhất"
+		end
+		local closest, dist = nil, Settings.AuraRange
+		local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not myRoot then return nil end
 		for _, plr in ipairs(Players:GetPlayers()) do
 			if plr \~= player and plr.Character then
-				local tRoot = plr.Character:FindFirstChild("HumanoidRootPart")
-				local tHum = plr.Character:FindFirstChildOfClass("Humanoid")
-				if tRoot and tHum and tHum.Health > 0 then
-					local dist = (root.Position - tRoot.Position).Magnitude
-					if dist < closestDist then
-						closestDist = dist
-						closest = tRoot
+				local root = plr.Character:FindFirstChild("HumanoidRootPart")
+				local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+				if root and hum and hum.Health > 0 then
+					local d = (myRoot.Position - root.Position).Magnitude
+					if d < dist then
+						dist = d
+						closest = plr
 					end
 				end
 			end
 		end
+		return closest
+	end
 
-		if closest then
-			lastHit = tick()
-			root.CFrame = CFrame.lookAt(root.Position, Vector3.new(closest.Position.X, root.Position.Y, closest.Position.Z))
-			pcall(function()
-				VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-				task.wait(0.03)
-				VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-			end)
-			status.Text = "Đang đánh..."
+	UserInputService.JumpRequest:Connect(function()
+		if Settings.InfJump and player.Character then
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			end
 		end
-	end
+	end)
+
+	RunService.Heartbeat:Connect(function()
+		if Settings.Speed and player.Character then
+			local hum = player.Character:FindFirstChildOfClass("Humanoid")
+			if hum then hum.WalkSpeed = Settings.WalkSpeed end
+		end
+		if Settings.Hitbox then
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr \~= player and plr.Character then
+					createHitbox(plr.Character)
+				end
+			end
+		end
+		if Settings.KillAura then
+			local target = getTarget()
+			if target and tick() - lastAttack > Settings.AttackDelay then
+				lastAttack = tick()
+				local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+				if myRoot and tRoot then
+					myRoot.CFrame = CFrame.lookAt(myRoot.Position, Vector3.new(tRoot.Position.X, myRoot.Position.Y, tRoot.Position.Z))
+					pcall(function()
+						VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+						task.wait(0.02)
+						VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+					end)
+				end
+			end
+		end
+	end)
+
+	Players.PlayerRemoving:Connect(function(plr)
+		if plr.Character and hitboxes[plr.Character] then
+			pcall(function() hitboxes[plr.Character]:Destroy() end)
+			hitboxes[plr.Character] = nil
+		end
+		if Settings.SelectedTarget == plr then
+			Settings.TargetMode = "Closest"
+			Settings.SelectedTarget = nil
+			targetLabel.Text = "Mục tiêu: Gần nhất"
+		end
+	end)
+
+	player.CharacterAdded:Connect(function(char)
+		task.wait(0.5)
+		if Settings.Speed then
+			local hum = char:WaitForChild("Humanoid", 5)
+			if hum then hum.WalkSpeed = Settings.WalkSpeed end
+		end
+	end)
+
+	openBtn.MouseButton1Click:Connect(function()
+		frame.Visible = not frame.Visible
+		if frame.Visible then refreshPlayerList() end
+	end)
+
+	closeBtn.MouseButton1Click:Connect(function()
+		frame.Visible = false
+	end)
+
+	Players.PlayerAdded:Connect(function()
+		task.wait(1)
+		if frame.Visible then refreshPlayerList() end
+	end)
 end)
 
--- Giữ speed khi hồi sinh
-player.CharacterAdded:Connect(function(char)
-	task.wait(0.6)
-	local hum = char:WaitForChild("Humanoid", 5)
-	if hum and SpeedOn then
-		hum.WalkSpeed = SpeedValue
-	end
-end)
-
-print("=================================")
-print("PROJECT SMASH LOADED")
-print("Nút SMASH màu đỏ đã hiện góc phải")
-print("=================================")
+if not success then
+	warn("Smash Aim Error:", err)
+end
 ]])()
