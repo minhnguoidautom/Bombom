@@ -1,0 +1,219 @@
+loadstring([[
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local pg = player:WaitForChild("PlayerGui")
+
+pcall(function()
+	if pg:FindFirstChild("CoordFloat") then
+		pg.CoordFloat:Destroy()
+	end
+end)
+
+local savedPos = nil          -- tọa độ đã lưu
+local floatOn = false         -- bật/tắt float
+local floatPart = nil
+
+-- ===== GUI =====
+local gui = Instance.new("ScreenGui")
+gui.Name = "CoordFloat"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = pg
+
+local openBtn = Instance.new("TextButton")
+openBtn.Size = UDim2.new(0, 58, 0, 58)
+openBtn.Position = UDim2.new(1, -72, 0.35, 0)
+openBtn.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
+openBtn.Text = "FLOAT"
+openBtn.TextColor3 = Color3.fromRGB(255,255,255)
+openBtn.TextSize = 12
+openBtn.Font = Enum.Font.GothamBold
+openBtn.Parent = gui
+Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 270, 0, 280)
+frame.Position = UDim2.new(0.5, -135, 0.5, -140)
+frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+frame.Visible = false
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 13)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "FLOAT THEO TỌA ĐỘ"
+title.TextColor3 = Color3.fromRGB(0, 180, 255)
+title.TextSize = 16
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -36, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+closeBtn.TextSize = 14
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = frame
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 7)
+
+local coordLabel = Instance.new("TextLabel")
+coordLabel.Size = UDim2.new(0.9, 0, 0, 40)
+coordLabel.Position = UDim2.new(0.05, 0, 0.18, 0)
+coordLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+coordLabel.Text = "Chưa lưu tọa độ"
+coordLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+coordLabel.TextSize = 12
+coordLabel.Font = Enum.Font.Gotham
+coordLabel.TextWrapped = true
+coordLabel.Parent = frame
+Instance.new("UICorner", coordLabel).CornerRadius = UDim.new(0, 8)
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, 0, 0, 20)
+status.Position = UDim2.new(0, 0, 0.88, 0)
+status.BackgroundTransparency = 1
+status.Text = "Bước 1: Lưu tọa độ"
+status.TextColor3 = Color3.fromRGB(150, 150, 160)
+status.TextSize = 12
+status.Font = Enum.Font.Gotham
+status.Parent = frame
+
+-- Nút Lưu tọa độ
+local saveBtn = Instance.new("TextButton")
+saveBtn.Size = UDim2.new(0.86, 0, 0, 40)
+saveBtn.Position = UDim2.new(0.07, 0, 0.38, 0)
+saveBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 220)
+saveBtn.Text = "LƯU TỌA ĐỘ"
+saveBtn.TextColor3 = Color3.fromRGB(255,255,255)
+saveBtn.TextSize = 15
+saveBtn.Font = Enum.Font.GothamBold
+saveBtn.Parent = frame
+Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 9)
+
+-- Nút Float
+local floatBtn = Instance.new("TextButton")
+floatBtn.Size = UDim2.new(0.86, 0, 0, 40)
+floatBtn.Position = UDim2.new(0.07, 0, 0.56, 0)
+floatBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+floatBtn.Text = "FLOAT : OFF"
+floatBtn.TextColor3 = Color3.fromRGB(255,255,255)
+floatBtn.TextSize = 15
+floatBtn.Font = Enum.Font.GothamBold
+floatBtn.Parent = frame
+Instance.new("UICorner", floatBtn).CornerRadius = UDim.new(0, 9)
+
+-- Nút Xóa tọa độ
+local clearBtn = Instance.new("TextButton")
+clearBtn.Size = UDim2.new(0.86, 0, 0, 34)
+clearBtn.Position = UDim2.new(0.07, 0, 0.73, 0)
+clearBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 100)
+clearBtn.Text = "Xóa tọa độ đã lưu"
+clearBtn.TextColor3 = Color3.fromRGB(255,255,255)
+clearBtn.TextSize = 13
+clearBtn.Font = Enum.Font.Gotham
+clearBtn.Parent = frame
+Instance.new("UICorner", clearBtn).CornerRadius = UDim.new(0, 8)
+
+-- ===== Logic =====
+local function getRoot()
+	local char = player.Character
+	if not char then return nil end
+	return char:FindFirstChild("HumanoidRootPart")
+end
+
+saveBtn.MouseButton1Click:Connect(function()
+	local root = getRoot()
+	if not root then
+		status.Text = "Không tìm thấy nhân vật"
+		return
+	end
+	savedPos = root.Position
+	coordLabel.Text = string.format("X: %.1f | Y: %.1f | Z: %.1f", savedPos.X, savedPos.Y, savedPos.Z)
+	status.Text = "Đã lưu tọa độ - Bật FLOAT để bay tại đây"
+end)
+
+floatBtn.MouseButton1Click:Connect(function()
+	if not savedPos then
+		status.Text = "Chưa lưu tọa độ!"
+		return
+	end
+	floatOn = not floatOn
+	if floatOn then
+		floatBtn.Text = "FLOAT : ON"
+		floatBtn.BackgroundColor3 = Color3.fromRGB(0, 175, 100)
+		status.Text = "Đang float tại tọa độ đã lưu"
+	else
+		floatBtn.Text = "FLOAT : OFF"
+		floatBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+		status.Text = "Đã tắt float"
+		if floatPart then
+			pcall(function() floatPart:Destroy() end)
+			floatPart = nil
+		end
+	end
+end)
+
+clearBtn.MouseButton1Click:Connect(function()
+	savedPos = nil
+	floatOn = false
+	floatBtn.Text = "FLOAT : OFF"
+	floatBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+	coordLabel.Text = "Chưa lưu tọa độ"
+	status.Text = "Đã xóa tọa độ"
+	if floatPart then
+		pcall(function() floatPart:Destroy() end)
+		floatPart = nil
+	end
+end)
+
+openBtn.MouseButton1Click:Connect(function()
+	frame.Visible = not frame.Visible
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+	frame.Visible = false
+end)
+
+-- Giữ nhân vật tại tọa độ đã lưu
+RunService.Heartbeat:Connect(function()
+	if not floatOn or not savedPos then return end
+	local root = getRoot()
+	if not root then return end
+
+	-- Giữ đúng vị trí đã lưu
+	root.CFrame = CFrame.new(savedPos)
+	root.AssemblyLinearVelocity = Vector3.zero
+	root.AssemblyAngularVelocity = Vector3.zero
+
+	-- Platform nhìn thấy (tùy chọn)
+	if not floatPart or not floatPart.Parent then
+		floatPart = Instance.new("Part")
+		floatPart.Name = "FloatMarker"
+		floatPart.Size = Vector3.new(4, 0.5, 4)
+		floatPart.Transparency = 0.4
+		floatPart.Color = Color3.fromRGB(0, 160, 255)
+		floatPart.Material = Enum.Material.ForceField
+		floatPart.Anchored = true
+		floatPart.CanCollide = false
+		floatPart.Parent = workspace
+	end
+	floatPart.Position = savedPos - Vector3.new(0, 3, 0)
+end)
+
+player.CharacterAdded:Connect(function()
+	task.wait(0.5)
+	if floatPart then
+		pcall(function() floatPart:Destroy() end)
+		floatPart = nil
+	end
+	-- Float vẫn giữ nếu đang bật + đã có tọa độ
+end)
+
+print("Coord Float Loaded")
+]])()
