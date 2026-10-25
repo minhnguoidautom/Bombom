@@ -16,6 +16,8 @@ local savedY, floorOn, floorPart = nil, false, nil
 local aimOn, selectedTarget = false, nil
 local speedOn, speedValue = false, 16
 local tpTarget = nil
+local aimSmooth = 0.35
+local aimPart = "Root"
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "FloatAimSpeedTP"
@@ -24,8 +26,8 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 999
 gui.Parent = pg
 
+-- Nút tròn CỐ ĐỊNH
 local openBtn = Instance.new("TextButton")
-openBtn.Name = "MoveBtn"
 openBtn.Size = UDim2.new(0, 44, 0, 44)
 openBtn.Position = UDim2.new(1, -54, 0.18, 0)
 openBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
@@ -34,66 +36,11 @@ openBtn.TextColor3 = Color3.fromRGB(255,255,255)
 openBtn.TextSize = 15
 openBtn.Font = Enum.Font.GothamBold
 openBtn.Active = true
-openBtn.AutoButtonColor = true
 openBtn.Parent = gui
 Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
 
--- ===== Kéo nút tròn (sửa kỹ) =====
-local btnDragging = false
-local btnMoved = false
-local btnStartPos = nil
-local btnDragStart = nil
-local btnMoveConn = nil
-local btnEndConn = nil
-
-local function stopBtnDrag()
-	btnDragging = false
-	if btnMoveConn then btnMoveConn:Disconnect() btnMoveConn = nil end
-	if btnEndConn then btnEndConn:Disconnect() btnEndConn = nil end
-end
-
-openBtn.InputBegan:Connect(function(input)
-	if input.UserInputType \~= Enum.UserInputType.MouseButton1 and input.UserInputType \~= Enum.UserInputType.Touch then
-		return
-	end
-	stopBtnDrag()
-	btnDragging = true
-	btnMoved = false
-	btnDragStart = input.Position
-	btnStartPos = openBtn.Position
-
-	btnMoveConn = UIS.InputChanged:Connect(function(inp)
-		if not btnDragging then return end
-		if inp.UserInputType \~= Enum.UserInputType.MouseMovement and inp.UserInputType \~= Enum.UserInputType.Touch then
-			return
-		end
-		local d = inp.Position - btnDragStart
-		if math.abs(d.X) > 4 or math.abs(d.Y) > 4 then
-			btnMoved = true
-		end
-		openBtn.Position = UDim2.new(
-			btnStartPos.X.Scale,
-			btnStartPos.X.Offset + d.X,
-			btnStartPos.Y.Scale,
-			btnStartPos.Y.Offset + d.Y
-		)
-	end)
-
-	btnEndConn = UIS.InputEnded:Connect(function(inp)
-		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-			local wasMoved = btnMoved
-			stopBtnDrag()
-			-- Chỉ mở menu nếu không kéo
-			if not wasMoved then
-				-- toggle ở dưới gán qua biến
-				_G.__toggleMenu = true
-			end
-		end
-	end)
-end)
-
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 280)
+frame.Size = UDim2.new(0, 200, 0, 300)
 frame.Position = UDim2.new(1, -210, 0.12, 0)
 frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 frame.Visible = false
@@ -102,7 +49,6 @@ Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
 local dragBar = Instance.new("TextButton")
 dragBar.Size = UDim2.new(1, -28, 0, 24)
-dragBar.Position = UDim2.new(0, 0, 0, 0)
 dragBar.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
 dragBar.Text = "≡ MENU (kéo)"
 dragBar.TextColor3 = Color3.fromRGB(0, 180, 255)
@@ -124,34 +70,26 @@ closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = frame
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
 
--- Kéo khung menu
-local frameDragging = false
-local frameStart, framePos, frameMoveConn, frameEndConn
-
+-- Chỉ kéo khung MENU
+local fDrag, fStart, fPos, fMove, fEnd = false, nil, nil, nil, nil
 dragBar.InputBegan:Connect(function(input)
-	if input.UserInputType \~= Enum.UserInputType.MouseButton1 and input.UserInputType \~= Enum.UserInputType.Touch then
-		return
-	end
-	frameDragging = true
-	frameStart = input.Position
-	framePos = frame.Position
-	if frameMoveConn then frameMoveConn:Disconnect() end
-	if frameEndConn then frameEndConn:Disconnect() end
-
-	frameMoveConn = UIS.InputChanged:Connect(function(inp)
-		if not frameDragging then return end
-		if inp.UserInputType \~= Enum.UserInputType.MouseMovement and inp.UserInputType \~= Enum.UserInputType.Touch then
-			return
-		end
-		local d = inp.Position - frameStart
-		frame.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + d.X, framePos.Y.Scale, framePos.Y.Offset + d.Y)
+	if input.UserInputType \~= Enum.UserInputType.MouseButton1 and input.UserInputType \~= Enum.UserInputType.Touch then return end
+	fDrag = true
+	fStart = input.Position
+	fPos = frame.Position
+	if fMove then fMove:Disconnect() end
+	if fEnd then fEnd:Disconnect() end
+	fMove = UIS.InputChanged:Connect(function(inp)
+		if not fDrag then return end
+		if inp.UserInputType \~= Enum.UserInputType.MouseMovement and inp.UserInputType \~= Enum.UserInputType.Touch then return end
+		local d = inp.Position - fStart
+		frame.Position = UDim2.new(fPos.X.Scale, fPos.X.Offset + d.X, fPos.Y.Scale, fPos.Y.Offset + d.Y)
 	end)
-
-	frameEndConn = UIS.InputEnded:Connect(function(inp)
+	fEnd = UIS.InputEnded:Connect(function(inp)
 		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-			frameDragging = false
-			if frameMoveConn then frameMoveConn:Disconnect() frameMoveConn = nil end
-			if frameEndConn then frameEndConn:Disconnect() frameEndConn = nil end
+			fDrag = false
+			if fMove then fMove:Disconnect() fMove = nil end
+			if fEnd then fEnd:Disconnect() fEnd = nil end
 		end
 	end)
 end)
@@ -162,7 +100,7 @@ scroll.Position = UDim2.new(0, 4, 0, 26)
 scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel = 0
 scroll.ScrollBarThickness = 3
-scroll.CanvasSize = UDim2.new(0, 0, 0, 380)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 400)
 scroll.Parent = frame
 
 local y = 0
@@ -205,7 +143,6 @@ speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 speedLabel.TextSize = 10
 speedLabel.Font = Enum.Font.Gotham
 speedLabel.Parent = scroll
-
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(1, -4, 0, 12)
 sliderBg.Position = UDim2.new(0, 2, 0, ny(12))
@@ -217,7 +154,6 @@ sliderFill.Size = UDim2.new((16-1)/199, 0, 1, 0)
 sliderFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 sliderFill.Parent = sliderBg
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
-
 local sDrag = false
 local function setSpeedFromX(x)
 	local a = math.clamp((x - sliderBg.AbsolutePosition.X) / math.max(sliderBg.AbsoluteSize.X, 1), 0, 1)
@@ -232,16 +168,13 @@ sliderBg.InputBegan:Connect(function(i)
 	end
 end)
 UIS.InputEnded:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-		sDrag = false
-	end
+	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then sDrag = false end
 end)
 UIS.InputChanged:Connect(function(i)
 	if sDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
 		setSpeedFromX(i.Position.X)
 	end
 end)
-
 speedBtn.Activated:Connect(function()
 	speedOn = not speedOn
 	speedBtn.Text = speedOn and "Speed: ON" or "Speed: OFF"
@@ -279,6 +212,18 @@ targetLabel.Parent = scroll
 Instance.new("UICorner", targetLabel).CornerRadius = UDim.new(0, 4)
 local aimBtn = btn("Aim: OFF", Color3.fromRGB(55, 55, 65))
 local refreshAimBtn = btn("DS Aim", Color3.fromRGB(0, 130, 200))
+local aimHeadBtn = btn("Aim: Thân", Color3.fromRGB(70, 70, 90))
+aimHeadBtn.Activated:Connect(function()
+	if aimPart == "Root" then
+		aimPart = "Head"
+		aimHeadBtn.Text = "Aim: Đầu"
+		aimHeadBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 200)
+	else
+		aimPart = "Root"
+		aimHeadBtn.Text = "Aim: Thân"
+		aimHeadBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
+	end
+end)
 local aimList = Instance.new("ScrollingFrame")
 aimList.Size = UDim2.new(1, -4, 0, 48)
 aimList.Position = UDim2.new(0, 2, 0, ny(48))
@@ -315,6 +260,15 @@ Instance.new("UIListLayout", tpList).Padding = UDim.new(0, 2)
 scroll.CanvasSize = UDim2.new(0, 0, 0, y + 8)
 
 local function getRoot(c) return c and c:FindFirstChild("HumanoidRootPart") end
+local function getAimPoint(char)
+	if not char then return nil end
+	if aimPart == "Head" then
+		local head = char:FindFirstChild("Head")
+		if head then return head.Position end
+	end
+	local root = getRoot(char)
+	return root and root.Position or nil
+end
 local function destroyFloor()
 	if floorPart then pcall(function() floorPart:Destroy() end) floorPart = nil end
 end
@@ -378,13 +332,8 @@ local function toggleMenu()
 	end
 end
 
--- Poll mở menu khi chạm nhanh nút M
-RunService.Heartbeat:Connect(function()
-	if _G.__toggleMenu then
-		_G.__toggleMenu = false
-		toggleMenu()
-	end
-end)
+-- Nút M: chỉ bấm mở/đóng, KHÔNG kéo
+openBtn.Activated:Connect(toggleMenu)
 
 saveBtn.Activated:Connect(function()
 	local r = getRoot(player.Character)
@@ -418,6 +367,21 @@ refreshAimBtn.Activated:Connect(function() fillList(aimList, true) end)
 refreshTpBtn.Activated:Connect(function() fillList(tpList, false) end)
 closeBtn.Activated:Connect(function() frame.Visible = false end)
 
+RunService.RenderStepped:Connect(function(dt)
+	if not aimOn or not selectedTarget then return end
+	local myRoot = getRoot(player.Character)
+	if not myRoot then return end
+	local tChar = selectedTarget.Character
+	if not tChar then return end
+	local tHum = tChar:FindFirstChildOfClass("Humanoid")
+	if not tHum or tHum.Health <= 0 then return end
+	local targetPos = getAimPoint(tChar)
+	if not targetPos then return end
+	local lookAt = (aimPart == "Head") and targetPos or Vector3.new(targetPos.X, myRoot.Position.Y, targetPos.Z)
+	local goal = CFrame.lookAt(myRoot.Position, lookAt)
+	myRoot.CFrame = myRoot.CFrame:Lerp(goal, math.clamp(aimSmooth + dt * 2, 0, 1))
+end)
+
 RunService.Heartbeat:Connect(function()
 	local char = player.Character
 	local myR = getRoot(char)
@@ -425,13 +389,6 @@ RunService.Heartbeat:Connect(function()
 	if speedOn and hum then hum.WalkSpeed = speedValue end
 	if floorOn and savedY and floorPart and myR then
 		floorPart.Position = Vector3.new(myR.Position.X, savedY - 3.5, myR.Position.Z)
-	end
-	if aimOn and selectedTarget and myR then
-		local tR = getRoot(selectedTarget.Character)
-		local tH = selectedTarget.Character and selectedTarget.Character:FindFirstChildOfClass("Humanoid")
-		if tR and tH and tH.Health > 0 then
-			myR.CFrame = CFrame.lookAt(myR.Position, Vector3.new(tR.Position.X, myR.Position.Y, tR.Position.Z))
-		end
 	end
 end)
 
@@ -444,5 +401,5 @@ player.CharacterAdded:Connect(function(char)
 	end
 end)
 
-print("Nut M keo duoc")
+print("Nut M co dinh")
 ]])()
