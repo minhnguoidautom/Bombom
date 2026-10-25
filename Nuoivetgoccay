@@ -85,7 +85,6 @@ local function label(text, y, color)
 	l.Parent = frame
 end
 
--- SPEED
 label("— SPEED —", 0.07, Color3.fromRGB(100, 220, 120))
 
 local speedBtn = Instance.new("TextButton")
@@ -173,7 +172,6 @@ speedBtn.MouseButton1Click:Connect(function()
 	status.Text = speedOn and ("Speed " .. speedValue) or "Speed tắt"
 end)
 
--- FLOAT
 label("— SÀN FLOAT —", 0.24, Color3.fromRGB(100, 180, 255))
 
 local coordLabel = Instance.new("TextLabel")
@@ -209,7 +207,6 @@ floorBtn.Font = Enum.Font.GothamBold
 floorBtn.Parent = frame
 Instance.new("UICorner", floorBtn).CornerRadius = UDim.new(0, 7)
 
--- AIM
 label("— AIMBOT —", 0.39, Color3.fromRGB(255, 120, 80))
 
 local targetLabel = Instance.new("TextLabel")
@@ -255,7 +252,6 @@ aimList.Parent = frame
 Instance.new("UICorner", aimList).CornerRadius = UDim.new(0, 7)
 Instance.new("UIListLayout", aimList).Padding = UDim.new(0, 3)
 
--- TP
 label("— TELEPORT —", 0.64, Color3.fromRGB(220, 180, 80))
 
 local tpLabel = Instance.new("TextLabel")
@@ -434,5 +430,5 @@ player.CharacterAdded:Connect(function(char)
 	end
 end)
 
-print("MENU LOADED - Nút MENU góc phải")
+print("MENU LOADED")
 ]])()
