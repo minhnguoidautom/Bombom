@@ -21,123 +21,126 @@ local gui = Instance.new("ScreenGui")
 gui.Name = "FloatAimSpeedTP"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
+gui.DisplayOrder = 999
 gui.Parent = pg
 
--- Nút MENU: góc trên phải, tránh nút Nhảy
 local openBtn = Instance.new("TextButton")
-openBtn.Size = UDim2.new(0, 52, 0, 52)
-openBtn.Position = UDim2.new(1, -62, 0.12, 0)
+openBtn.Size = UDim2.new(0, 56, 0, 56)
+openBtn.Position = UDim2.new(1, -68, 0.08, 0)
 openBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 openBtn.Text = "MENU"
 openBtn.TextColor3 = Color3.fromRGB(255,255,255)
-openBtn.TextSize = 11
+openBtn.TextSize = 12
 openBtn.Font = Enum.Font.GothamBold
-openBtn.ZIndex = 100
+openBtn.AutoButtonColor = true
 openBtn.Parent = gui
 Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
 
--- Panel nhỏ hơn + cuộn
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 280, 0, 420)
-frame.Position = UDim2.new(0.5, -140, 0.5, -210)
-frame.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+frame.Size = UDim2.new(0.92, 0, 0.75, 0)
+frame.Position = UDim2.new(0.04, 0, 0.12, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 frame.Visible = false
-frame.ZIndex = 100
 frame.Parent = gui
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -40, 0, 32)
-title.Position = UDim2.new(0, 8, 0, 4)
+title.Size = UDim2.new(1, -44, 0, 36)
+title.Position = UDim2.new(0, 10, 0, 4)
 title.BackgroundTransparency = 1
-title.Text = "FLOAT · AIM · SPEED · TP"
+title.Text = "MENU"
 title.TextColor3 = Color3.fromRGB(0, 180, 255)
-title.TextSize = 14
+title.TextSize = 18
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = frame
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 28, 0, 28)
-closeBtn.Position = UDim2.new(1, -34, 0, 4)
-closeBtn.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
+closeBtn.Size = UDim2.new(0, 32, 0, 32)
+closeBtn.Position = UDim2.new(1, -38, 0, 4)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
-closeBtn.TextSize = 14
+closeBtn.TextSize = 16
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = frame
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 7)
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
 
 local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, -12, 1, -56)
-scroll.Position = UDim2.new(0, 6, 0, 36)
+scroll.Size = UDim2.new(1, -12, 1, -60)
+scroll.Position = UDim2.new(0, 6, 0, 42)
 scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 5
-scroll.CanvasSize = UDim2.new(0, 0, 0, 520)
+scroll.ScrollBarThickness = 6
+scroll.CanvasSize = UDim2.new(0, 0, 0, 560)
 scroll.Parent = frame
 
-local holder = Instance.new("Frame")
-holder.Size = UDim2.new(1, -8, 0, 520)
-holder.BackgroundTransparency = 1
-holder.Parent = scroll
+local y = 0
+local function nextY(h)
+	local cur = y
+	y = y + h + 8
+	return cur
+end
+
+local function addText(txt, color)
+	local l = Instance.new("TextLabel")
+	l.Size = UDim2.new(1, -8, 0, 18)
+	l.Position = UDim2.new(0, 4, 0, nextY(18))
+	l.BackgroundTransparency = 1
+	l.Text = txt
+	l.TextColor3 = color
+	l.TextSize = 13
+	l.Font = Enum.Font.GothamBold
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.Parent = scroll
+	return l
+end
+
+local function addBtn(txt, color, h)
+	h = h or 36
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1, -8, 0, h)
+	b.Position = UDim2.new(0, 4, 0, nextY(h))
+	b.BackgroundColor3 = color
+	b.Text = txt
+	b.TextColor3 = Color3.fromRGB(255,255,255)
+	b.TextSize = 14
+	b.Font = Enum.Font.GothamBold
+	b.AutoButtonColor = true
+	b.Parent = scroll
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+	return b
+end
 
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(1, 0, 0, 16)
 status.Position = UDim2.new(0, 0, 1, -18)
 status.BackgroundTransparency = 1
-status.Text = "Sẵn sàng"
-status.TextColor3 = Color3.fromRGB(150, 150, 160)
+status.Text = "Bấm MENU để mở"
+status.TextColor3 = Color3.fromRGB(160, 160, 170)
 status.TextSize = 11
 status.Font = Enum.Font.Gotham
 status.Parent = frame
 
-local function makeLabel(parent, text, y, color)
-	local l = Instance.new("TextLabel")
-	l.Size = UDim2.new(1, 0, 0, 16)
-	l.Position = UDim2.new(0, 0, 0, y)
-	l.BackgroundTransparency = 1
-	l.Text = text
-	l.TextColor3 = color
-	l.TextSize = 11
-	l.Font = Enum.Font.GothamBold
-	l.Parent = parent
-	return l
-end
-
-local function makeBtn(parent, text, y, h, color)
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(1, -4, 0, h or 28)
-	b.Position = UDim2.new(0, 2, 0, y)
-	b.BackgroundColor3 = color or Color3.fromRGB(55, 55, 65)
-	b.Text = text
-	b.TextColor3 = Color3.fromRGB(255,255,255)
-	b.TextSize = 12
-	b.Font = Enum.Font.GothamBold
-	b.Parent = parent
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 7)
-	return b
-end
-
 -- SPEED
-makeLabel(holder, "— SPEED —", 0, Color3.fromRGB(100, 220, 120))
-local speedBtn = makeBtn(holder, "Speed: OFF", 20, 28, Color3.fromRGB(55, 55, 65))
+addText("— SPEED —", Color3.fromRGB(100, 220, 120))
+local speedBtn = addBtn("Speed: OFF", Color3.fromRGB(55, 55, 65))
 
-local speedValueLabel = Instance.new("TextLabel")
-speedValueLabel.Size = UDim2.new(1, 0, 0, 16)
-speedValueLabel.Position = UDim2.new(0, 0, 0, 52)
-speedValueLabel.BackgroundTransparency = 1
-speedValueLabel.Text = "Speed: 16"
-speedValueLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-speedValueLabel.TextSize = 12
-speedValueLabel.Font = Enum.Font.Gotham
-speedValueLabel.Parent = holder
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(1, -8, 0, 18)
+speedLabel.Position = UDim2.new(0, 4, 0, nextY(18))
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Speed: 16  (kéo thanh)"
+speedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+speedLabel.TextSize = 12
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.Parent = scroll
 
 local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(1, -4, 0, 16)
-sliderBg.Position = UDim2.new(0, 2, 0, 72)
+sliderBg.Size = UDim2.new(1, -8, 0, 22)
+sliderBg.Position = UDim2.new(0, 4, 0, nextY(22))
 sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-sliderBg.Parent = holder
+sliderBg.Parent = scroll
 Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
 
 local sliderFill = Instance.new("Frame")
@@ -146,136 +149,114 @@ sliderFill.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 sliderFill.Parent = sliderBg
 Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
 
-local sliderKnob = Instance.new("Frame")
-sliderKnob.Size = UDim2.new(0, 18, 0, 18)
-sliderKnob.Position = UDim2.new((16-1)/199, -9, 0.5, -9)
-sliderKnob.BackgroundColor3 = Color3.fromRGB(255,255,255)
-sliderKnob.Parent = sliderBg
-Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0)
-
 local dragging = false
 local function setSpeedFromX(x)
-	local absPos = sliderBg.AbsolutePosition.X
-	local absSize = math.max(sliderBg.AbsoluteSize.X, 1)
-	local alpha = math.clamp((x - absPos) / absSize, 0, 1)
-	speedValue = math.floor(1 + alpha * 199)
-	sliderFill.Size = UDim2.new(alpha, 0, 1, 0)
-	sliderKnob.Position = UDim2.new(alpha, -9, 0.5, -9)
-	speedValueLabel.Text = "Speed: " .. speedValue
+	local a = math.clamp((x - sliderBg.AbsolutePosition.X) / math.max(sliderBg.AbsoluteSize.X, 1), 0, 1)
+	speedValue = math.floor(1 + a * 199)
+	sliderFill.Size = UDim2.new(a, 0, 1, 0)
+	speedLabel.Text = "Speed: " .. speedValue .. "  (kéo thanh)"
 end
 
-sliderBg.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+sliderBg.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
 		dragging = true
-		setSpeedFromX(input.Position.X)
+		setSpeedFromX(i.Position.X)
 	end
 end)
-sliderKnob.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-	end
-end)
-UIS.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+UIS.InputEnded:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
 		dragging = false
 	end
 end)
-UIS.InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		setSpeedFromX(input.Position.X)
+UIS.InputChanged:Connect(function(i)
+	if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+		setSpeedFromX(i.Position.X)
 	end
 end)
 
-speedBtn.MouseButton1Click:Connect(function()
+speedBtn.Activated:Connect(function()
 	speedOn = not speedOn
 	speedBtn.Text = speedOn and "Speed: ON" or "Speed: OFF"
 	speedBtn.BackgroundColor3 = speedOn and Color3.fromRGB(0, 170, 100) or Color3.fromRGB(55, 55, 65)
 	if not speedOn then
-		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if hum then hum.WalkSpeed = 16 end
+		local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if h then h.WalkSpeed = 16 end
 	end
 	status.Text = speedOn and ("Speed " .. speedValue) or "Speed tắt"
 end)
 
 -- FLOAT
-makeLabel(holder, "— SÀN FLOAT —", 100, Color3.fromRGB(100, 180, 255))
+addText("— SÀN FLOAT —", Color3.fromRGB(100, 180, 255))
 local coordLabel = Instance.new("TextLabel")
-coordLabel.Size = UDim2.new(1, -4, 0, 22)
-coordLabel.Position = UDim2.new(0, 2, 0, 120)
-coordLabel.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+coordLabel.Size = UDim2.new(1, -8, 0, 24)
+coordLabel.Position = UDim2.new(0, 4, 0, nextY(24))
+coordLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
 coordLabel.Text = "Chưa lưu sàn Y"
 coordLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-coordLabel.TextSize = 11
+coordLabel.TextSize = 12
 coordLabel.Font = Enum.Font.Gotham
-coordLabel.Parent = holder
+coordLabel.Parent = scroll
 Instance.new("UICorner", coordLabel).CornerRadius = UDim.new(0, 6)
 
-local saveBtn = makeBtn(holder, "Lưu sàn Y", 148, 28, Color3.fromRGB(0, 130, 210))
-saveBtn.Size = UDim2.new(0.48, 0, 0, 28)
-local floorBtn = makeBtn(holder, "Sàn: OFF", 148, 28, Color3.fromRGB(55, 55, 65))
-floorBtn.Size = UDim2.new(0.48, 0, 0, 28)
-floorBtn.Position = UDim2.new(0.52, 0, 0, 148)
+local saveBtn = addBtn("Lưu sàn Y", Color3.fromRGB(0, 130, 210))
+local floorBtn = addBtn("Sàn: OFF", Color3.fromRGB(55, 55, 65))
 
 -- AIM
-makeLabel(holder, "— AIMBOT —", 186, Color3.fromRGB(255, 120, 80))
+addText("— AIMBOT —", Color3.fromRGB(255, 120, 80))
 local targetLabel = Instance.new("TextLabel")
-targetLabel.Size = UDim2.new(1, -4, 0, 20)
-targetLabel.Position = UDim2.new(0, 2, 0, 206)
-targetLabel.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+targetLabel.Size = UDim2.new(1, -8, 0, 22)
+targetLabel.Position = UDim2.new(0, 4, 0, nextY(22))
+targetLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
 targetLabel.Text = "Aim: Chưa chọn"
 targetLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-targetLabel.TextSize = 11
+targetLabel.TextSize = 12
 targetLabel.Font = Enum.Font.Gotham
-targetLabel.Parent = holder
+targetLabel.Parent = scroll
 Instance.new("UICorner", targetLabel).CornerRadius = UDim.new(0, 6)
 
-local aimBtn = makeBtn(holder, "Aim: OFF", 232, 26, Color3.fromRGB(55, 55, 65))
-aimBtn.Size = UDim2.new(0.48, 0, 0, 26)
-local refreshAimBtn = makeBtn(holder, "DS Aim", 232, 26, Color3.fromRGB(0, 130, 200))
-refreshAimBtn.Size = UDim2.new(0.48, 0, 0, 26)
-refreshAimBtn.Position = UDim2.new(0.52, 0, 0, 232)
+local aimBtn = addBtn("Aim: OFF", Color3.fromRGB(55, 55, 65))
+local refreshAimBtn = addBtn("Làm mới DS Aim", Color3.fromRGB(0, 130, 200))
 
 local aimList = Instance.new("ScrollingFrame")
-aimList.Size = UDim2.new(1, -4, 0, 60)
-aimList.Position = UDim2.new(0, 2, 0, 264)
-aimList.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
+aimList.Size = UDim2.new(1, -8, 0, 70)
+aimList.Position = UDim2.new(0, 4, 0, nextY(70))
+aimList.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
 aimList.BorderSizePixel = 0
 aimList.ScrollBarThickness = 4
-aimList.Parent = holder
+aimList.Parent = scroll
 Instance.new("UICorner", aimList).CornerRadius = UDim.new(0, 7)
 Instance.new("UIListLayout", aimList).Padding = UDim.new(0, 3)
 
 -- TP
-makeLabel(holder, "— TELEPORT —", 334, Color3.fromRGB(220, 180, 80))
+addText("— TELEPORT —", Color3.fromRGB(220, 180, 80))
 local tpLabel = Instance.new("TextLabel")
-tpLabel.Size = UDim2.new(1, -4, 0, 20)
-tpLabel.Position = UDim2.new(0, 2, 0, 354)
-tpLabel.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+tpLabel.Size = UDim2.new(1, -8, 0, 22)
+tpLabel.Position = UDim2.new(0, 4, 0, nextY(22))
+tpLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
 tpLabel.Text = "TP: Chưa chọn"
 tpLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-tpLabel.TextSize = 11
+tpLabel.TextSize = 12
 tpLabel.Font = Enum.Font.Gotham
-tpLabel.Parent = holder
+tpLabel.Parent = scroll
 Instance.new("UICorner", tpLabel).CornerRadius = UDim.new(0, 6)
 
-local tpBtn = makeBtn(holder, "TP SAU LƯNG", 380, 28, Color3.fromRGB(200, 140, 30))
-tpBtn.Size = UDim2.new(0.48, 0, 0, 28)
-local refreshTpBtn = makeBtn(holder, "DS TP", 380, 28, Color3.fromRGB(0, 130, 200))
-refreshTpBtn.Size = UDim2.new(0.48, 0, 0, 28)
-refreshTpBtn.Position = UDim2.new(0.52, 0, 0, 380)
+local tpBtn = addBtn("TP SAU LƯNG", Color3.fromRGB(200, 140, 30))
+local refreshTpBtn = addBtn("Làm mới DS TP", Color3.fromRGB(0, 130, 200))
 
 local tpList = Instance.new("ScrollingFrame")
-tpList.Size = UDim2.new(1, -4, 0, 60)
-tpList.Position = UDim2.new(0, 2, 0, 414)
-tpList.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
+tpList.Size = UDim2.new(1, -8, 0, 70)
+tpList.Position = UDim2.new(0, 4, 0, nextY(70))
+tpList.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
 tpList.BorderSizePixel = 0
 tpList.ScrollBarThickness = 4
-tpList.Parent = holder
+tpList.Parent = scroll
 Instance.new("UICorner", tpList).CornerRadius = UDim.new(0, 7)
 Instance.new("UIListLayout", tpList).Padding = UDim.new(0, 3)
 
-local function getRoot(char)
-	return char and char:FindFirstChild("HumanoidRootPart")
+scroll.CanvasSize = UDim2.new(0, 0, 0, y + 20)
+
+local function getRoot(c)
+	return c and c:FindFirstChild("HumanoidRootPart")
 end
 
 local function destroyFloor()
@@ -285,9 +266,9 @@ end
 local function createFloor()
 	if not savedY then return end
 	destroyFloor()
-	local root = getRoot(player.Character)
+	local r = getRoot(player.Character)
 	local x, z = 0, 0
-	if root then x, z = root.Position.X, root.Position.Z end
+	if r then x, z = r.Position.X, r.Position.Z end
 	floorPart = Instance.new("Part")
 	floorPart.Name = "FloatFloor"
 	floorPart.Size = Vector3.new(12, 1, 12)
@@ -304,20 +285,21 @@ local function fillList(list, isAim)
 	for _, c in ipairs(list:GetChildren()) do
 		if c:IsA("TextButton") then c:Destroy() end
 	end
-	local y = 0
+	local h = 0
 	for _, plr in ipairs(Players:GetPlayers()) do
 		if plr \~= player then
-			local sel = isAim and selectedTarget == plr or (not isAim and tpTarget == plr)
-			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(1, -6, 0, 22)
-			btn.BackgroundColor3 = sel and Color3.fromRGB(0, 150, 90) or Color3.fromRGB(42, 42, 52)
-			btn.Text = plr.Name
-			btn.TextColor3 = Color3.fromRGB(235, 235, 235)
-			btn.TextSize = 11
-			btn.Font = Enum.Font.Gotham
-			btn.Parent = list
-			Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-			btn.MouseButton1Click:Connect(function()
+			local sel = (isAim and selectedTarget == plr) or (not isAim and tpTarget == plr)
+			local b = Instance.new("TextButton")
+			b.Size = UDim2.new(1, -6, 0, 26)
+			b.BackgroundColor3 = sel and Color3.fromRGB(0, 150, 90) or Color3.fromRGB(45, 45, 55)
+			b.Text = plr.Name
+			b.TextColor3 = Color3.fromRGB(240, 240, 240)
+			b.TextSize = 13
+			b.Font = Enum.Font.Gotham
+			b.AutoButtonColor = true
+			b.Parent = list
+			Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+			b.Activated:Connect(function()
 				if isAim then
 					selectedTarget = plr
 					targetLabel.Text = "Aim: " .. plr.Name
@@ -329,22 +311,22 @@ local function fillList(list, isAim)
 				end
 				status.Text = (isAim and "Aim → " or "TP → ") .. plr.Name
 			end)
-			y = y + 25
+			h = h + 29
 		end
 	end
-	list.CanvasSize = UDim2.new(0, 0, 0, y)
+	list.CanvasSize = UDim2.new(0, 0, 0, h)
 end
 
-saveBtn.MouseButton1Click:Connect(function()
-	local root = getRoot(player.Character)
-	if not root then status.Text = "Không có nhân vật" return end
-	savedY = root.Position.Y
+saveBtn.Activated:Connect(function()
+	local r = getRoot(player.Character)
+	if not r then status.Text = "Không có nhân vật" return end
+	savedY = r.Position.Y
 	coordLabel.Text = string.format("Sàn Y: %.1f", savedY)
 	status.Text = "Đã lưu sàn"
 	if floorOn then createFloor() end
 end)
 
-floorBtn.MouseButton1Click:Connect(function()
+floorBtn.Activated:Connect(function()
 	if not savedY then status.Text = "Chưa lưu sàn!" return end
 	floorOn = not floorOn
 	floorBtn.Text = floorOn and "Sàn: ON" or "Sàn: OFF"
@@ -352,48 +334,52 @@ floorBtn.MouseButton1Click:Connect(function()
 	if floorOn then createFloor() else destroyFloor() end
 end)
 
-aimBtn.MouseButton1Click:Connect(function()
+aimBtn.Activated:Connect(function()
 	if not selectedTarget then status.Text = "Chưa chọn Aim!" return end
 	aimOn = not aimOn
 	aimBtn.Text = aimOn and "Aim: ON" or "Aim: OFF"
 	aimBtn.BackgroundColor3 = aimOn and Color3.fromRGB(0, 170, 100) or Color3.fromRGB(55, 55, 65)
 end)
 
-tpBtn.MouseButton1Click:Connect(function()
+tpBtn.Activated:Connect(function()
 	if not tpTarget then status.Text = "Chưa chọn TP!" return end
-	local myRoot = getRoot(player.Character)
-	local tRoot = getRoot(tpTarget.Character)
-	if not myRoot or not tRoot then status.Text = "Không thấy nhân vật" return end
-	local behind = tRoot.CFrame * CFrame.new(0, 0, 3.5)
-	myRoot.CFrame = CFrame.lookAt(behind.Position, tRoot.Position)
+	local myR = getRoot(player.Character)
+	local tR = getRoot(tpTarget.Character)
+	if not myR or not tR then status.Text = "Không thấy nhân vật" return end
+	local behind = tR.CFrame * CFrame.new(0, 0, 3.5)
+	myR.CFrame = CFrame.lookAt(behind.Position, tR.Position)
 	status.Text = "TP sau lưng " .. tpTarget.Name
 end)
 
-refreshAimBtn.MouseButton1Click:Connect(function() fillList(aimList, true) end)
-refreshTpBtn.MouseButton1Click:Connect(function() fillList(tpList, false) end)
+refreshAimBtn.Activated:Connect(function() fillList(aimList, true) end)
+refreshTpBtn.Activated:Connect(function() fillList(tpList, false) end)
 
-openBtn.MouseButton1Click:Connect(function()
+openBtn.Activated:Connect(function()
 	frame.Visible = not frame.Visible
 	if frame.Visible then
 		fillList(aimList, true)
 		fillList(tpList, false)
+		status.Text = "Menu mở"
 	end
 end)
-closeBtn.MouseButton1Click:Connect(function() frame.Visible = false end)
+
+closeBtn.Activated:Connect(function()
+	frame.Visible = false
+end)
 
 RunService.Heartbeat:Connect(function()
 	local char = player.Character
-	local myRoot = getRoot(char)
+	local myR = getRoot(char)
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if speedOn and hum then hum.WalkSpeed = speedValue end
-	if floorOn and savedY and floorPart and myRoot then
-		floorPart.Position = Vector3.new(myRoot.Position.X, savedY - 3.5, myRoot.Position.Z)
+	if floorOn and savedY and floorPart and myR then
+		floorPart.Position = Vector3.new(myR.Position.X, savedY - 3.5, myR.Position.Z)
 	end
-	if aimOn and selectedTarget and myRoot then
-		local tRoot = getRoot(selectedTarget.Character)
-		local tHum = selectedTarget.Character and selectedTarget.Character:FindFirstChildOfClass("Humanoid")
-		if tRoot and tHum and tHum.Health > 0 then
-			myRoot.CFrame = CFrame.lookAt(myRoot.Position, Vector3.new(tRoot.Position.X, myRoot.Position.Y, tRoot.Position.Z))
+	if aimOn and selectedTarget and myR then
+		local tR = getRoot(selectedTarget.Character)
+		local tH = selectedTarget.Character and selectedTarget.Character:FindFirstChildOfClass("Humanoid")
+		if tR and tH and tH.Health > 0 then
+			myR.CFrame = CFrame.lookAt(myR.Position, Vector3.new(tR.Position.X, myR.Position.Y, tR.Position.Z))
 		end
 	end
 end)
@@ -402,10 +388,10 @@ player.CharacterAdded:Connect(function(char)
 	task.wait(0.5)
 	if floorOn and savedY then createFloor() end
 	if speedOn then
-		local hum = char:WaitForChild("Humanoid", 5)
-		if hum then hum.WalkSpeed = speedValue end
+		local h = char:WaitForChild("Humanoid", 5)
+		if h then h.WalkSpeed = speedValue end
 	end
 end)
 
-print("MENU mobile OK")
+print("MENU mobile Activated OK")
 ]])()
