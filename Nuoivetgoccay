@@ -25,15 +25,72 @@ gui.DisplayOrder = 999
 gui.Parent = pg
 
 local openBtn = Instance.new("TextButton")
-openBtn.Size = UDim2.new(0, 42, 0, 42)
-openBtn.Position = UDim2.new(1, -50, 0.15, 0)
+openBtn.Name = "MoveBtn"
+openBtn.Size = UDim2.new(0, 44, 0, 44)
+openBtn.Position = UDim2.new(1, -54, 0.18, 0)
 openBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 openBtn.Text = "M"
 openBtn.TextColor3 = Color3.fromRGB(255,255,255)
-openBtn.TextSize = 14
+openBtn.TextSize = 15
 openBtn.Font = Enum.Font.GothamBold
+openBtn.Active = true
+openBtn.AutoButtonColor = true
 openBtn.Parent = gui
 Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
+
+-- ===== Kéo nút tròn (sửa kỹ) =====
+local btnDragging = false
+local btnMoved = false
+local btnStartPos = nil
+local btnDragStart = nil
+local btnMoveConn = nil
+local btnEndConn = nil
+
+local function stopBtnDrag()
+	btnDragging = false
+	if btnMoveConn then btnMoveConn:Disconnect() btnMoveConn = nil end
+	if btnEndConn then btnEndConn:Disconnect() btnEndConn = nil end
+end
+
+openBtn.InputBegan:Connect(function(input)
+	if input.UserInputType \~= Enum.UserInputType.MouseButton1 and input.UserInputType \~= Enum.UserInputType.Touch then
+		return
+	end
+	stopBtnDrag()
+	btnDragging = true
+	btnMoved = false
+	btnDragStart = input.Position
+	btnStartPos = openBtn.Position
+
+	btnMoveConn = UIS.InputChanged:Connect(function(inp)
+		if not btnDragging then return end
+		if inp.UserInputType \~= Enum.UserInputType.MouseMovement and inp.UserInputType \~= Enum.UserInputType.Touch then
+			return
+		end
+		local d = inp.Position - btnDragStart
+		if math.abs(d.X) > 4 or math.abs(d.Y) > 4 then
+			btnMoved = true
+		end
+		openBtn.Position = UDim2.new(
+			btnStartPos.X.Scale,
+			btnStartPos.X.Offset + d.X,
+			btnStartPos.Y.Scale,
+			btnStartPos.Y.Offset + d.Y
+		)
+	end)
+
+	btnEndConn = UIS.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			local wasMoved = btnMoved
+			stopBtnDrag()
+			-- Chỉ mở menu nếu không kéo
+			if not wasMoved then
+				-- toggle ở dưới gán qua biến
+				_G.__toggleMenu = true
+			end
+		end
+	end)
+end)
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 200, 0, 280)
@@ -43,16 +100,16 @@ frame.Visible = false
 frame.Parent = gui
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
--- Thanh kéo GUI
 local dragBar = Instance.new("TextButton")
 dragBar.Size = UDim2.new(1, -28, 0, 24)
 dragBar.Position = UDim2.new(0, 0, 0, 0)
 dragBar.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
-dragBar.Text = "≡  MENU  (kéo)"
+dragBar.Text = "≡ MENU (kéo)"
 dragBar.TextColor3 = Color3.fromRGB(0, 180, 255)
 dragBar.TextSize = 11
 dragBar.Font = Enum.Font.GothamBold
 dragBar.AutoButtonColor = false
+dragBar.Active = true
 dragBar.Parent = frame
 Instance.new("UICorner", dragBar).CornerRadius = UDim.new(0, 10)
 
@@ -67,50 +124,36 @@ closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = frame
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
 
--- Kéo frame
-local fDrag, fStart, fPos = false, nil, nil
-dragBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		fDrag = true
-		fStart = input.Position
-		fPos = frame.Position
-	end
-end)
-UIS.InputChanged:Connect(function(input)
-	if not fDrag then return end
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		local d = input.Position - fStart
-		frame.Position = UDim2.new(fPos.X.Scale, fPos.X.Offset + d.X, fPos.Y.Scale, fPos.Y.Offset + d.Y)
-	end
-end)
-UIS.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		fDrag = false
-	end
-end)
+-- Kéo khung menu
+local frameDragging = false
+local frameStart, framePos, frameMoveConn, frameEndConn
 
--- Kéo nút M
-local bDrag, bStart, bPos, bMoved = false, nil, nil, false
-openBtn.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		bDrag = true
-		bMoved = false
-		bStart = input.Position
-		bPos = openBtn.Position
+dragBar.InputBegan:Connect(function(input)
+	if input.UserInputType \~= Enum.UserInputType.MouseButton1 and input.UserInputType \~= Enum.UserInputType.Touch then
+		return
 	end
-end)
-UIS.InputChanged:Connect(function(input)
-	if not bDrag then return end
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		local d = input.Position - bStart
-		if math.abs(d.X) > 5 or math.abs(d.Y) > 5 then bMoved = true end
-		openBtn.Position = UDim2.new(bPos.X.Scale, bPos.X.Offset + d.X, bPos.Y.Scale, bPos.Y.Offset + d.Y)
-	end
-end)
-UIS.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		bDrag = false
-	end
+	frameDragging = true
+	frameStart = input.Position
+	framePos = frame.Position
+	if frameMoveConn then frameMoveConn:Disconnect() end
+	if frameEndConn then frameEndConn:Disconnect() end
+
+	frameMoveConn = UIS.InputChanged:Connect(function(inp)
+		if not frameDragging then return end
+		if inp.UserInputType \~= Enum.UserInputType.MouseMovement and inp.UserInputType \~= Enum.UserInputType.Touch then
+			return
+		end
+		local d = inp.Position - frameStart
+		frame.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + d.X, framePos.Y.Scale, framePos.Y.Offset + d.Y)
+	end)
+
+	frameEndConn = UIS.InputEnded:Connect(function(inp)
+		if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+			frameDragging = false
+			if frameMoveConn then frameMoveConn:Disconnect() frameMoveConn = nil end
+			if frameEndConn then frameEndConn:Disconnect() frameEndConn = nil end
+		end
+	end)
 end)
 
 local scroll = Instance.new("ScrollingFrame")
@@ -327,6 +370,22 @@ local function fillList(list, isAim)
 	list.CanvasSize = UDim2.new(0, 0, 0, h)
 end
 
+local function toggleMenu()
+	frame.Visible = not frame.Visible
+	if frame.Visible then
+		fillList(aimList, true)
+		fillList(tpList, false)
+	end
+end
+
+-- Poll mở menu khi chạm nhanh nút M
+RunService.Heartbeat:Connect(function()
+	if _G.__toggleMenu then
+		_G.__toggleMenu = false
+		toggleMenu()
+	end
+end)
+
 saveBtn.Activated:Connect(function()
 	local r = getRoot(player.Character)
 	if not r then return end
@@ -357,15 +416,6 @@ tpBtn.Activated:Connect(function()
 end)
 refreshAimBtn.Activated:Connect(function() fillList(aimList, true) end)
 refreshTpBtn.Activated:Connect(function() fillList(tpList, false) end)
-
-openBtn.Activated:Connect(function()
-	if bMoved then return end
-	frame.Visible = not frame.Visible
-	if frame.Visible then
-		fillList(aimList, true)
-		fillList(tpList, false)
-	end
-end)
 closeBtn.Activated:Connect(function() frame.Visible = false end)
 
 RunService.Heartbeat:Connect(function()
@@ -394,5 +444,5 @@ player.CharacterAdded:Connect(function(char)
 	end
 end)
 
-print("GUI keo duoc")
+print("Nut M keo duoc")
 ]])()
