@@ -7,8 +7,9 @@ local player = Players.LocalPlayer
 local pg = player:WaitForChild("PlayerGui")
 
 pcall(function()
-	local old = pg:FindFirstChild("FloatAimSpeedTP")
-	if old then old:Destroy() end
+	if pg:FindFirstChild("FloatAimSpeedTP") then
+		pg.FloatAimSpeedTP:Destroy()
+	end
 end)
 
 local savedY, floorOn, floorPart = nil, false, nil
@@ -22,34 +23,38 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Parent = pg
 
+-- Nút MENU: góc trên phải, tránh nút Nhảy
 local openBtn = Instance.new("TextButton")
-openBtn.Size = UDim2.new(0, 64, 0, 64)
-openBtn.Position = UDim2.new(1, -80, 0.28, 0)
+openBtn.Size = UDim2.new(0, 52, 0, 52)
+openBtn.Position = UDim2.new(1, -62, 0.12, 0)
 openBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 openBtn.Text = "MENU"
 openBtn.TextColor3 = Color3.fromRGB(255,255,255)
-openBtn.TextSize = 13
+openBtn.TextSize = 11
 openBtn.Font = Enum.Font.GothamBold
-openBtn.ZIndex = 50
+openBtn.ZIndex = 100
 openBtn.Parent = gui
 Instance.new("UICorner", openBtn).CornerRadius = UDim.new(1, 0)
 
+-- Panel nhỏ hơn + cuộn
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 520)
-frame.Position = UDim2.new(0.5, -150, 0.5, -260)
+frame.Size = UDim2.new(0, 280, 0, 420)
+frame.Position = UDim2.new(0.5, -140, 0.5, -210)
 frame.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
 frame.Visible = false
-frame.ZIndex = 50
+frame.ZIndex = 100
 frame.Parent = gui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 34)
+title.Size = UDim2.new(1, -40, 0, 32)
+title.Position = UDim2.new(0, 8, 0, 4)
 title.BackgroundTransparency = 1
 title.Text = "FLOAT · AIM · SPEED · TP"
 title.TextColor3 = Color3.fromRGB(0, 180, 255)
-title.TextSize = 15
+title.TextSize = 14
 title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = frame
 
 local closeBtn = Instance.new("TextButton")
@@ -63,56 +68,76 @@ closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = frame
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 7)
 
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, -12, 1, -56)
+scroll.Position = UDim2.new(0, 6, 0, 36)
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 5
+scroll.CanvasSize = UDim2.new(0, 0, 0, 520)
+scroll.Parent = frame
+
+local holder = Instance.new("Frame")
+holder.Size = UDim2.new(1, -8, 0, 520)
+holder.BackgroundTransparency = 1
+holder.Parent = scroll
+
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, 0, 0, 18)
-status.Position = UDim2.new(0, 0, 0.96, 0)
+status.Size = UDim2.new(1, 0, 0, 16)
+status.Position = UDim2.new(0, 0, 1, -18)
 status.BackgroundTransparency = 1
-status.Text = "Đã load - bấm MENU"
+status.Text = "Sẵn sàng"
 status.TextColor3 = Color3.fromRGB(150, 150, 160)
 status.TextSize = 11
 status.Font = Enum.Font.Gotham
 status.Parent = frame
 
-local function label(text, y, color)
+local function makeLabel(parent, text, y, color)
 	local l = Instance.new("TextLabel")
 	l.Size = UDim2.new(1, 0, 0, 16)
-	l.Position = UDim2.new(0, 0, y, 0)
+	l.Position = UDim2.new(0, 0, 0, y)
 	l.BackgroundTransparency = 1
 	l.Text = text
 	l.TextColor3 = color
 	l.TextSize = 11
 	l.Font = Enum.Font.GothamBold
-	l.Parent = frame
+	l.Parent = parent
+	return l
 end
 
-label("— SPEED —", 0.07, Color3.fromRGB(100, 220, 120))
+local function makeBtn(parent, text, y, h, color)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1, -4, 0, h or 28)
+	b.Position = UDim2.new(0, 2, 0, y)
+	b.BackgroundColor3 = color or Color3.fromRGB(55, 55, 65)
+	b.Text = text
+	b.TextColor3 = Color3.fromRGB(255,255,255)
+	b.TextSize = 12
+	b.Font = Enum.Font.GothamBold
+	b.Parent = parent
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 7)
+	return b
+end
 
-local speedBtn = Instance.new("TextButton")
-speedBtn.Size = UDim2.new(0.9, 0, 0, 28)
-speedBtn.Position = UDim2.new(0.05, 0, 0.10, 0)
-speedBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-speedBtn.Text = "Speed: OFF"
-speedBtn.TextColor3 = Color3.fromRGB(255,255,255)
-speedBtn.TextSize = 12
-speedBtn.Font = Enum.Font.GothamBold
-speedBtn.Parent = frame
-Instance.new("UICorner", speedBtn).CornerRadius = UDim.new(0, 7)
+-- SPEED
+makeLabel(holder, "— SPEED —", 0, Color3.fromRGB(100, 220, 120))
+local speedBtn = makeBtn(holder, "Speed: OFF", 20, 28, Color3.fromRGB(55, 55, 65))
 
 local speedValueLabel = Instance.new("TextLabel")
-speedValueLabel.Size = UDim2.new(0.9, 0, 0, 16)
-speedValueLabel.Position = UDim2.new(0.05, 0, 0.16, 0)
+speedValueLabel.Size = UDim2.new(1, 0, 0, 16)
+speedValueLabel.Position = UDim2.new(0, 0, 0, 52)
 speedValueLabel.BackgroundTransparency = 1
 speedValueLabel.Text = "Speed: 16"
 speedValueLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 speedValueLabel.TextSize = 12
 speedValueLabel.Font = Enum.Font.Gotham
-speedValueLabel.Parent = frame
+speedValueLabel.Parent = holder
 
 local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(0.9, 0, 0, 16)
-sliderBg.Position = UDim2.new(0.05, 0, 0.195, 0)
+sliderBg.Size = UDim2.new(1, -4, 0, 16)
+sliderBg.Position = UDim2.new(0, 2, 0, 72)
 sliderBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-sliderBg.Parent = frame
+sliderBg.Parent = holder
 Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
 
 local sliderFill = Instance.new("Frame")
@@ -172,128 +197,80 @@ speedBtn.MouseButton1Click:Connect(function()
 	status.Text = speedOn and ("Speed " .. speedValue) or "Speed tắt"
 end)
 
-label("— SÀN FLOAT —", 0.24, Color3.fromRGB(100, 180, 255))
-
+-- FLOAT
+makeLabel(holder, "— SÀN FLOAT —", 100, Color3.fromRGB(100, 180, 255))
 local coordLabel = Instance.new("TextLabel")
-coordLabel.Size = UDim2.new(0.9, 0, 0, 22)
-coordLabel.Position = UDim2.new(0.05, 0, 0.275, 0)
+coordLabel.Size = UDim2.new(1, -4, 0, 22)
+coordLabel.Position = UDim2.new(0, 2, 0, 120)
 coordLabel.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
 coordLabel.Text = "Chưa lưu sàn Y"
 coordLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 coordLabel.TextSize = 11
 coordLabel.Font = Enum.Font.Gotham
-coordLabel.Parent = frame
+coordLabel.Parent = holder
 Instance.new("UICorner", coordLabel).CornerRadius = UDim.new(0, 6)
 
-local saveBtn = Instance.new("TextButton")
-saveBtn.Size = UDim2.new(0.42, 0, 0, 28)
-saveBtn.Position = UDim2.new(0.05, 0, 0.325, 0)
-saveBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 210)
-saveBtn.Text = "Lưu sàn Y"
-saveBtn.TextColor3 = Color3.fromRGB(255,255,255)
-saveBtn.TextSize = 12
-saveBtn.Font = Enum.Font.GothamBold
-saveBtn.Parent = frame
-Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 7)
+local saveBtn = makeBtn(holder, "Lưu sàn Y", 148, 28, Color3.fromRGB(0, 130, 210))
+saveBtn.Size = UDim2.new(0.48, 0, 0, 28)
+local floorBtn = makeBtn(holder, "Sàn: OFF", 148, 28, Color3.fromRGB(55, 55, 65))
+floorBtn.Size = UDim2.new(0.48, 0, 0, 28)
+floorBtn.Position = UDim2.new(0.52, 0, 0, 148)
 
-local floorBtn = Instance.new("TextButton")
-floorBtn.Size = UDim2.new(0.42, 0, 0, 28)
-floorBtn.Position = UDim2.new(0.53, 0, 0.325, 0)
-floorBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-floorBtn.Text = "Sàn: OFF"
-floorBtn.TextColor3 = Color3.fromRGB(255,255,255)
-floorBtn.TextSize = 12
-floorBtn.Font = Enum.Font.GothamBold
-floorBtn.Parent = frame
-Instance.new("UICorner", floorBtn).CornerRadius = UDim.new(0, 7)
-
-label("— AIMBOT —", 0.39, Color3.fromRGB(255, 120, 80))
-
+-- AIM
+makeLabel(holder, "— AIMBOT —", 186, Color3.fromRGB(255, 120, 80))
 local targetLabel = Instance.new("TextLabel")
-targetLabel.Size = UDim2.new(0.9, 0, 0, 20)
-targetLabel.Position = UDim2.new(0.05, 0, 0.425, 0)
+targetLabel.Size = UDim2.new(1, -4, 0, 20)
+targetLabel.Position = UDim2.new(0, 2, 0, 206)
 targetLabel.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
 targetLabel.Text = "Aim: Chưa chọn"
 targetLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
 targetLabel.TextSize = 11
 targetLabel.Font = Enum.Font.Gotham
-targetLabel.Parent = frame
+targetLabel.Parent = holder
 Instance.new("UICorner", targetLabel).CornerRadius = UDim.new(0, 6)
 
-local aimBtn = Instance.new("TextButton")
-aimBtn.Size = UDim2.new(0.42, 0, 0, 26)
-aimBtn.Position = UDim2.new(0.05, 0, 0.47, 0)
-aimBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-aimBtn.Text = "Aim: OFF"
-aimBtn.TextColor3 = Color3.fromRGB(255,255,255)
-aimBtn.TextSize = 12
-aimBtn.Font = Enum.Font.GothamBold
-aimBtn.Parent = frame
-Instance.new("UICorner", aimBtn).CornerRadius = UDim.new(0, 7)
-
-local refreshAimBtn = Instance.new("TextButton")
-refreshAimBtn.Size = UDim2.new(0.42, 0, 0, 26)
-refreshAimBtn.Position = UDim2.new(0.53, 0, 0.47, 0)
-refreshAimBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 200)
-refreshAimBtn.Text = "DS Aim"
-refreshAimBtn.TextColor3 = Color3.fromRGB(255,255,255)
-refreshAimBtn.TextSize = 12
-refreshAimBtn.Font = Enum.Font.GothamBold
-refreshAimBtn.Parent = frame
-Instance.new("UICorner", refreshAimBtn).CornerRadius = UDim.new(0, 7)
+local aimBtn = makeBtn(holder, "Aim: OFF", 232, 26, Color3.fromRGB(55, 55, 65))
+aimBtn.Size = UDim2.new(0.48, 0, 0, 26)
+local refreshAimBtn = makeBtn(holder, "DS Aim", 232, 26, Color3.fromRGB(0, 130, 200))
+refreshAimBtn.Size = UDim2.new(0.48, 0, 0, 26)
+refreshAimBtn.Position = UDim2.new(0.52, 0, 0, 232)
 
 local aimList = Instance.new("ScrollingFrame")
-aimList.Size = UDim2.new(0.9, 0, 0, 55)
-aimList.Position = UDim2.new(0.05, 0, 0.525, 0)
+aimList.Size = UDim2.new(1, -4, 0, 60)
+aimList.Position = UDim2.new(0, 2, 0, 264)
 aimList.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
 aimList.BorderSizePixel = 0
 aimList.ScrollBarThickness = 4
-aimList.Parent = frame
+aimList.Parent = holder
 Instance.new("UICorner", aimList).CornerRadius = UDim.new(0, 7)
 Instance.new("UIListLayout", aimList).Padding = UDim.new(0, 3)
 
-label("— TELEPORT —", 0.64, Color3.fromRGB(220, 180, 80))
-
+-- TP
+makeLabel(holder, "— TELEPORT —", 334, Color3.fromRGB(220, 180, 80))
 local tpLabel = Instance.new("TextLabel")
-tpLabel.Size = UDim2.new(0.9, 0, 0, 20)
-tpLabel.Position = UDim2.new(0.05, 0, 0.675, 0)
+tpLabel.Size = UDim2.new(1, -4, 0, 20)
+tpLabel.Position = UDim2.new(0, 2, 0, 354)
 tpLabel.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
 tpLabel.Text = "TP: Chưa chọn"
 tpLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
 tpLabel.TextSize = 11
 tpLabel.Font = Enum.Font.Gotham
-tpLabel.Parent = frame
+tpLabel.Parent = holder
 Instance.new("UICorner", tpLabel).CornerRadius = UDim.new(0, 6)
 
-local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(0.42, 0, 0, 28)
-tpBtn.Position = UDim2.new(0.05, 0, 0.72, 0)
-tpBtn.BackgroundColor3 = Color3.fromRGB(200, 140, 30)
-tpBtn.Text = "TP SAU LƯNG"
-tpBtn.TextColor3 = Color3.fromRGB(255,255,255)
-tpBtn.TextSize = 11
-tpBtn.Font = Enum.Font.GothamBold
-tpBtn.Parent = frame
-Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 7)
-
-local refreshTpBtn = Instance.new("TextButton")
-refreshTpBtn.Size = UDim2.new(0.42, 0, 0, 28)
-refreshTpBtn.Position = UDim2.new(0.53, 0, 0.72, 0)
-refreshTpBtn.BackgroundColor3 = Color3.fromRGB(0, 130, 200)
-refreshTpBtn.Text = "DS TP"
-refreshTpBtn.TextColor3 = Color3.fromRGB(255,255,255)
-refreshTpBtn.TextSize = 12
-refreshTpBtn.Font = Enum.Font.GothamBold
-refreshTpBtn.Parent = frame
-Instance.new("UICorner", refreshTpBtn).CornerRadius = UDim.new(0, 7)
+local tpBtn = makeBtn(holder, "TP SAU LƯNG", 380, 28, Color3.fromRGB(200, 140, 30))
+tpBtn.Size = UDim2.new(0.48, 0, 0, 28)
+local refreshTpBtn = makeBtn(holder, "DS TP", 380, 28, Color3.fromRGB(0, 130, 200))
+refreshTpBtn.Size = UDim2.new(0.48, 0, 0, 28)
+refreshTpBtn.Position = UDim2.new(0.52, 0, 0, 380)
 
 local tpList = Instance.new("ScrollingFrame")
-tpList.Size = UDim2.new(0.9, 0, 0, 55)
-tpList.Position = UDim2.new(0.05, 0, 0.78, 0)
+tpList.Size = UDim2.new(1, -4, 0, 60)
+tpList.Position = UDim2.new(0, 2, 0, 414)
 tpList.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
 tpList.BorderSizePixel = 0
 tpList.ScrollBarThickness = 4
-tpList.Parent = frame
+tpList.Parent = holder
 Instance.new("UICorner", tpList).CornerRadius = UDim.new(0, 7)
 Instance.new("UIListLayout", tpList).Padding = UDim.new(0, 3)
 
@@ -323,8 +300,8 @@ local function createFloor()
 	floorPart.Parent = workspace
 end
 
-local function fillList(scroll, isAim)
-	for _, c in ipairs(scroll:GetChildren()) do
+local function fillList(list, isAim)
+	for _, c in ipairs(list:GetChildren()) do
 		if c:IsA("TextButton") then c:Destroy() end
 	end
 	local y = 0
@@ -338,7 +315,7 @@ local function fillList(scroll, isAim)
 			btn.TextColor3 = Color3.fromRGB(235, 235, 235)
 			btn.TextSize = 11
 			btn.Font = Enum.Font.Gotham
-			btn.Parent = scroll
+			btn.Parent = list
 			Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
 			btn.MouseButton1Click:Connect(function()
 				if isAim then
@@ -355,7 +332,7 @@ local function fillList(scroll, isAim)
 			y = y + 25
 		end
 	end
-	scroll.CanvasSize = UDim2.new(0, 0, 0, y)
+	list.CanvasSize = UDim2.new(0, 0, 0, y)
 end
 
 saveBtn.MouseButton1Click:Connect(function()
@@ -430,5 +407,5 @@ player.CharacterAdded:Connect(function(char)
 	end
 end)
 
-print("MENU LOADED - OK")
+print("MENU mobile OK")
 ]])()
