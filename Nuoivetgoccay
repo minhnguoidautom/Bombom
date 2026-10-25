@@ -430,5 +430,5 @@ player.CharacterAdded:Connect(function(char)
 	end
 end)
 
-print("MENU LOADED")
+print("MENU LOADED - OK")
 ]])()
