@@ -1,9 +1,8 @@
 --[[
-    Aura Battles OP Hub v4
-    - Float (đã sửa)
-    - AimCam (chọn người chơi)
+    Aura Battles OP Hub v5
+    - Float Platform (tạo sàn + lưu Y + tự kéo lên)
     - Anti Knockback mạnh
-    - Đã xóa Hitbox Expander
+    - AimCam (chọn người chơi)
 ]]
 
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
@@ -11,7 +10,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "Aura Battles | OP Hub",
     LoadingTitle = "Aura Battles",
-    LoadingSubtitle = "Float + AimCam + AntiKB",
+    LoadingSubtitle = "Float Platform + AntiKB + AimCam",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "AuraBattlesHub",
@@ -44,7 +43,8 @@ local States = {
     ESP = false,
     NameESP = false,
     Float = false,
-    FloatPower = 1.2,
+    FloatY = nil,
+    FloatHeight = 3.5,
     AimCam = false,
     SelectedTarget = nil
 }
@@ -130,29 +130,39 @@ PlayerTab:CreateToggle({
     end
 })
 
--- ====================== FLOAT ======================
-PlayerTab:CreateSection("Float")
+-- ====================== FLOAT PLATFORM ======================
+PlayerTab:CreateSection("Float Platform")
 
 PlayerTab:CreateSlider({
-    Name = "Float Power",
-    Range = {0.5, 5},
-    Increment = 0.1,
-    CurrentValue = 1.2,
+    Name = "Khoảng cách sàn (dưới chân)",
+    Range = {2, 7},
+    Increment = 0.5,
+    CurrentValue = 3.5,
     Callback = function(Value)
-        States.FloatPower = Value
+        States.FloatHeight = Value
     end
 })
 
 PlayerTab:CreateToggle({
-    Name = "Float",
+    Name = "Float Platform (Sàn dưới chân)",
     CurrentValue = false,
     Callback = function(Value)
         States.Float = Value
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local hrp = char.HumanoidRootPart
-            if not Value and hrp:FindFirstChild("FloatForce") then
-                hrp.FloatForce:Destroy()
+        
+        if Value then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                States.FloatY = char.HumanoidRootPart.Position.Y
+                Rayfield:Notify({
+                    Title = "Float Platform",
+                    Content = "Đã lưu độ cao Y: " .. math.floor(States.FloatY),
+                    Duration = 3
+                })
+            end
+        else
+            States.FloatY = nil
+            if workspace:FindFirstChild("FloatPlatform") then
+                workspace.FloatPlatform:Destroy()
             end
         end
     end
@@ -161,7 +171,7 @@ PlayerTab:CreateToggle({
 -- ====================== COMBAT TAB ======================
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 
--- ====================== ANTI KNOCKBACK MẠNH ======================
+-- Anti Knockback
 CombatTab:CreateSection("Anti Knockback")
 
 CombatTab:CreateSlider({
@@ -240,7 +250,7 @@ CombatTab:CreateButton({
         else
             Rayfield:Notify({
                 Title = "AimCam",
-                Content = "Chưa chọn người chơi hoặc người chơi không tồn tại!",
+                Content = "Chưa chọn người chơi!",
                 Duration = 3
             })
         end
@@ -361,14 +371,12 @@ MiscTab:CreateButton({
 
 -- ====================== LOOPS ======================
 
--- Infinite Jump
 UserInputService.JumpRequest:Connect(function()
     if States.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end)
 
--- Main Heartbeat
 RunService.Heartbeat:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
@@ -401,7 +409,7 @@ RunService.Heartbeat:Connect(function()
         hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(22), 0)
     end
 
-    -- ====================== ANTI KNOCKBACK MẠNH ======================
+    -- ====================== ANTI KNOCKBACK ======================
     if States.AntiKnockback then
         local anti = hrp:FindFirstChild("AntiKB")
         if not anti then
@@ -415,13 +423,11 @@ RunService.Heartbeat:Connect(function()
         local power = (States.AntiKBPower or 8) / 10
         local vel = hrp.AssemblyLinearVelocity
 
-        -- Giảm mạnh velocity ngang
         hrp.AssemblyLinearVelocity = Vector3.new(
             vel.X * (1 - power),
             vel.Y,
             vel.Z * (1 - power)
         )
-
         anti.Velocity = Vector3.new(0, 0, 0)
     else
         if hrp:FindFirstChild("AntiKB") then
@@ -429,20 +435,41 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- ====================== FLOAT ======================
-    if States.Float then
-        local force = hrp:FindFirstChild("FloatForce")
-        if not force then
-            force = Instance.new("BodyVelocity")
-            force.Name = "FloatForce"
-            force.MaxForce = Vector3.new(0, 50000, 0)
-            force.P = 1500
-            force.Parent = hrp
+    -- ====================== FLOAT PLATFORM ======================
+    if States.Float and States.FloatY then
+        local platform = workspace:FindFirstChild("FloatPlatform")
+        if not platform then
+            platform = Instance.new("Part")
+            platform.Name = "FloatPlatform"
+            platform.Size = Vector3.new(8, 1, 8)
+            platform.Anchored = true
+            platform.CanCollide = true
+            platform.Transparency = 0.35
+            platform.Material = Enum.Material.Neon
+            platform.Color = Color3.fromRGB(0, 170, 255)
+            platform.TopSurface = Enum.SurfaceType.Smooth
+            platform.Parent = workspace
         end
-        force.Velocity = Vector3.new(0, States.FloatPower * 2.2, 0)
+
+        local platformY = States.FloatY - States.FloatHeight
+        platform.CFrame = CFrame.new(hrp.Position.X, platformY, hrp.Position.Z)
+
+        -- Nếu bị tụt xuống dưới sàn hơn 1 stud → kéo lên
+        if hrp.Position.Y < (platformY + 1) then
+            hrp.CFrame = CFrame.new(
+                hrp.Position.X,
+                platformY + 3.2,
+                hrp.Position.Z
+            )
+            hrp.AssemblyLinearVelocity = Vector3.new(
+                hrp.AssemblyLinearVelocity.X,
+                0,
+                hrp.AssemblyLinearVelocity.Z
+            )
+        end
     else
-        if hrp:FindFirstChild("FloatForce") then
-            hrp.FloatForce:Destroy()
+        if workspace:FindFirstChild("FloatPlatform") then
+            workspace.FloatPlatform:Destroy()
         end
     end
 
@@ -469,7 +496,7 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- ESP Loop
+-- ESP
 RunService.RenderStepped:Connect(function()
     if not States.ESP and not States.NameESP then return end
 
@@ -535,7 +562,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Character added
 LocalPlayer.CharacterAdded:Connect(function(char)
     task.wait(0.6)
     local hum = char:WaitForChild("Humanoid", 3)
@@ -548,7 +574,6 @@ LocalPlayer.CharacterAdded:Connect(function(char)
     end
 end)
 
--- Refresh player list
 Players.PlayerAdded:Connect(function()
     task.wait(1)
     RefreshPlayerList()
@@ -570,6 +595,6 @@ end)
 
 Rayfield:Notify({
     Title = "Aura Battles Hub",
-    Content = "Loaded • AntiKB mạnh + Float + AimCam",
+    Content = "Loaded • Float Platform + AntiKB + AimCam",
     Duration = 5
 })
