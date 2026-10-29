@@ -1,8 +1,9 @@
 --[[
-    Aura Battles OP Hub v5
+    Aura Battles OP Hub v7
     - Float Platform (tạo sàn + lưu Y + tự kéo lên)
     - Anti Knockback mạnh
-    - AimCam (chọn người chơi)
+    - AimCam (tự động xoay cam về mục tiêu)
+    - No Cooldown
 ]]
 
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
@@ -10,7 +11,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "Aura Battles | OP Hub",
     LoadingTitle = "Aura Battles",
-    LoadingSubtitle = "Float Platform + AntiKB + AimCam",
+    LoadingSubtitle = "Float + AntiKB + AimCam + NoCD",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "AuraBattlesHub",
@@ -46,7 +47,8 @@ local States = {
     FloatY = nil,
     FloatHeight = 3.5,
     AimCam = false,
-    SelectedTarget = nil
+    SelectedTarget = nil,
+    NoCooldown = false
 }
 
 -- ====================== PLAYER TAB ======================
@@ -199,6 +201,24 @@ CombatTab:CreateToggle({
     end
 })
 
+-- No Cooldown
+CombatTab:CreateSection("No Cooldown")
+
+CombatTab:CreateToggle({
+    Name = "No Cooldown (Không hồi chiêu)",
+    CurrentValue = false,
+    Callback = function(Value)
+        States.NoCooldown = Value
+        if Value then
+            Rayfield:Notify({
+                Title = "No Cooldown",
+                Content = "Đã bật không hồi chiêu",
+                Duration = 3
+            })
+        end
+    end
+})
+
 CombatTab:CreateButton({
     Name = "Teleport to Safe Zone",
     Callback = function()
@@ -244,7 +264,7 @@ CombatTab:CreateButton({
             States.AimCam = true
             Rayfield:Notify({
                 Title = "AimCam",
-                Content = "Đang aim vào: " .. States.SelectedTarget.Name,
+                Content = "Đang xoay cam về: " .. States.SelectedTarget.Name,
                 Duration = 3
             })
         else
@@ -261,7 +281,6 @@ CombatTab:CreateButton({
     Name = "Tắt AimCam",
     Callback = function()
         States.AimCam = false
-        Camera.CameraType = Enum.CameraType.Custom
         Rayfield:Notify({
             Title = "AimCam",
             Content = "Đã tắt AimCam",
@@ -473,16 +492,45 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- ====================== AIMCAM ======================
+    -- ====================== NO COOLDOWN ======================
+    if States.NoCooldown then
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("NumberValue") or v:IsA("IntValue") then
+                local name = string.lower(v.Name)
+                if string.find(name, "cooldown") or string.find(name, "cd") or string.find(name, "delay") or string.find(name, "timer") then
+                    v.Value = 0
+                end
+            end
+        end
+
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if playerGui then
+            for _, v in pairs(playerGui:GetDescendants()) do
+                if v:IsA("NumberValue") or v:IsA("IntValue") then
+                    local name = string.lower(v.Name)
+                    if string.find(name, "cooldown") or string.find(name, "cd") or string.find(name, "delay") then
+                        v.Value = 0
+                    end
+                end
+            end
+        end
+    end
+
+    -- ====================== AIMCAM (Tự động xoay cam về mục tiêu) ======================
     if States.AimCam and States.SelectedTarget then
         local targetChar = States.SelectedTarget.Character
-        if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+        if targetChar and targetChar:FindFirstChild("HumanoidRootPart") and targetChar:FindFirstChild("Humanoid") and targetChar.Humanoid.Health > 0 then
             local targetHRP = targetChar.HumanoidRootPart
-            Camera.CameraType = Enum.CameraType.Scriptable
-            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, targetHRP.Position + Vector3.new(0, 1.5, 0))
+            local targetPos = targetHRP.Position + Vector3.new(0, 1.5, 0)
+            local camPos = Camera.CFrame.Position
+            Camera.CFrame = CFrame.lookAt(camPos, targetPos)
         else
             States.AimCam = false
-            Camera.CameraType = Enum.CameraType.Custom
+            Rayfield:Notify({
+                Title = "AimCam",
+                Content = "Mục tiêu đã mất, đã tắt AimCam",
+                Duration = 2
+            })
         end
     end
 end)
@@ -583,18 +631,10 @@ Players.PlayerRemoving:Connect(function(plr)
     if States.SelectedTarget == plr then
         States.SelectedTarget = nil
         States.AimCam = false
-        Camera.CameraType = Enum.CameraType.Custom
     end
     RefreshPlayerList()
 end)
 
 task.spawn(function()
     task.wait(1)
-    RefreshPlayerList()
-end)
-
-Rayfield:Notify({
-    Title = "Aura Battles Hub",
-    Content = "Loaded • Float Platform + AntiKB + AimCam",
-    Duration = 5
-})
+    RefreshPlayerLi
