@@ -1,7 +1,9 @@
 --[[
-    Aura Battles OP Hub v2
-    + Hitbox Expander
-    + Float
+    Aura Battles OP Hub v4
+    - Float (đã sửa)
+    - AimCam (chọn người chơi)
+    - Anti Knockback mạnh
+    - Đã xóa Hitbox Expander
 ]]
 
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
@@ -9,7 +11,7 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "Aura Battles | OP Hub",
     LoadingTitle = "Aura Battles",
-    LoadingSubtitle = "No Key • Hitbox + Float",
+    LoadingSubtitle = "Float + AimCam + AntiKB",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "AuraBattlesHub",
@@ -24,6 +26,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
 -- States
 local States = {
@@ -35,15 +38,15 @@ local States = {
     Noclip = false,
     Fullbright = false,
     AntiKnockback = false,
+    AntiKBPower = 8,
     AntiAFK = false,
     SpinBot = false,
     ESP = false,
     NameESP = false,
-    -- New
-    HitboxExpander = false,
-    HitboxSize = 8,
     Float = false,
-    FloatHeight = 6
+    FloatPower = 1.2,
+    AimCam = false,
+    SelectedTarget = nil
 }
 
 -- ====================== PLAYER TAB ======================
@@ -131,12 +134,12 @@ PlayerTab:CreateToggle({
 PlayerTab:CreateSection("Float")
 
 PlayerTab:CreateSlider({
-    Name = "Float Height",
-    Range = {2, 20},
-    Increment = 0.5,
-    CurrentValue = 6,
+    Name = "Float Power",
+    Range = {0.5, 5},
+    Increment = 0.1,
+    CurrentValue = 1.2,
     Callback = function(Value)
-        States.FloatHeight = Value
+        States.FloatPower = Value
     end
 })
 
@@ -145,14 +148,11 @@ PlayerTab:CreateToggle({
     CurrentValue = false,
     Callback = function(Value)
         States.Float = Value
-        if not Value then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                local hrp = char.HumanoidRootPart
-                -- Xóa BodyVelocity cũ nếu có
-                if hrp:FindFirstChild("FloatBV") then
-                    hrp.FloatBV:Destroy()
-                end
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            if not Value and hrp:FindFirstChild("FloatForce") then
+                hrp.FloatForce:Destroy()
             end
         end
     end
@@ -161,41 +161,29 @@ PlayerTab:CreateToggle({
 -- ====================== COMBAT TAB ======================
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 
+-- ====================== ANTI KNOCKBACK MẠNH ======================
+CombatTab:CreateSection("Anti Knockback")
+
+CombatTab:CreateSlider({
+    Name = "Độ mạnh Anti KB",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = 8,
+    Callback = function(Value)
+        States.AntiKBPower = Value
+    end
+})
+
 CombatTab:CreateToggle({
-    Name = "Anti Knockback",
+    Name = "Anti Knockback (Mạnh)",
     CurrentValue = false,
     Callback = function(Value)
         States.AntiKnockback = Value
-    end
-})
-
--- ====================== HITBOX EXPANDER ======================
-CombatTab:CreateSection("Hitbox Expander")
-
-CombatTab:CreateSlider({
-    Name = "Hitbox Size",
-    Range = {2, 25},
-    Increment = 0.5,
-    CurrentValue = 8,
-    Callback = function(Value)
-        States.HitboxSize = Value
-    end
-})
-
-CombatTab:CreateToggle({
-    Name = "Hitbox Expander (Players)",
-    CurrentValue = false,
-    Callback = function(Value)
-        States.HitboxExpander = Value
-        if not Value then
-            -- Reset hitbox về mặc định khi tắt
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local hrp = player.Character.HumanoidRootPart
-                    hrp.Size = Vector3.new(2, 2, 1)
-                    hrp.Transparency = 1
-                    hrp.CanCollide = false
-                end
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            if not Value and hrp:FindFirstChild("AntiKB") then
+                hrp.AntiKB:Destroy()
             end
         end
     end
@@ -208,6 +196,79 @@ CombatTab:CreateButton({
         if char and char:FindFirstChild("HumanoidRootPart") then
             char.HumanoidRootPart.CFrame = CFrame.new(0, 50, 0)
         end
+    end
+})
+
+-- ====================== AIMCAM ======================
+CombatTab:CreateSection("AimCam")
+
+local TargetDropdown = CombatTab:CreateDropdown({
+    Name = "Chọn người chơi",
+    Options = {"None"},
+    CurrentOption = {"None"},
+    MultipleOptions = false,
+    Callback = function(Option)
+        local name = typeof(Option) == "table" and Option[1] or Option
+        if name == "None" then
+            States.SelectedTarget = nil
+        else
+            States.SelectedTarget = Players:FindFirstChild(name)
+        end
+    end
+})
+
+local function RefreshPlayerList()
+    local list = {"None"}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            table.insert(list, plr.Name)
+        end
+    end
+    TargetDropdown:Refresh(list)
+end
+
+CombatTab:CreateButton({
+    Name = "AimCam vào mục tiêu",
+    Callback = function()
+        if States.SelectedTarget and States.SelectedTarget.Character and States.SelectedTarget.Character:FindFirstChild("HumanoidRootPart") then
+            States.AimCam = true
+            Rayfield:Notify({
+                Title = "AimCam",
+                Content = "Đang aim vào: " .. States.SelectedTarget.Name,
+                Duration = 3
+            })
+        else
+            Rayfield:Notify({
+                Title = "AimCam",
+                Content = "Chưa chọn người chơi hoặc người chơi không tồn tại!",
+                Duration = 3
+            })
+        end
+    end
+})
+
+CombatTab:CreateButton({
+    Name = "Tắt AimCam",
+    Callback = function()
+        States.AimCam = false
+        Camera.CameraType = Enum.CameraType.Custom
+        Rayfield:Notify({
+            Title = "AimCam",
+            Content = "Đã tắt AimCam",
+            Duration = 2
+        })
+    end
+})
+
+CombatTab:CreateButton({
+    Name = "Refresh danh sách người chơi",
+    Callback = function()
+        RefreshPlayerList()
+        Rayfield:Notify({
+            Title = "AimCam",
+            Content = "Đã cập nhật danh sách",
+            Duration = 2
+        })
     end
 })
 
@@ -337,50 +398,64 @@ RunService.Heartbeat:Connect(function()
 
     -- Spin Bot
     if States.SpinBot then
-        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(25), 0)
+        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(22), 0)
     end
 
-    -- Anti Knockback
+    -- ====================== ANTI KNOCKBACK MẠNH ======================
     if States.AntiKnockback then
-        if hrp.AssemblyLinearVelocity.Magnitude > 80 then
-            hrp.AssemblyLinearVelocity = Vector3.new(
-                hrp.AssemblyLinearVelocity.X * 0.25,
-                hrp.AssemblyLinearVelocity.Y,
-                hrp.AssemblyLinearVelocity.Z * 0.25
-            )
+        local anti = hrp:FindFirstChild("AntiKB")
+        if not anti then
+            anti = Instance.new("BodyVelocity")
+            anti.Name = "AntiKB"
+            anti.MaxForce = Vector3.new(120000, 0, 120000)
+            anti.P = 4000
+            anti.Parent = hrp
+        end
+
+        local power = (States.AntiKBPower or 8) / 10
+        local vel = hrp.AssemblyLinearVelocity
+
+        -- Giảm mạnh velocity ngang
+        hrp.AssemblyLinearVelocity = Vector3.new(
+            vel.X * (1 - power),
+            vel.Y,
+            vel.Z * (1 - power)
+        )
+
+        anti.Velocity = Vector3.new(0, 0, 0)
+    else
+        if hrp:FindFirstChild("AntiKB") then
+            hrp.AntiKB:Destroy()
         end
     end
 
     -- ====================== FLOAT ======================
     if States.Float then
-        if not hrp:FindFirstChild("FloatBV") then
-            local bv = Instance.new("BodyVelocity")
-            bv.Name = "FloatBV"
-            bv.MaxForce = Vector3.new(0, 100000, 0)
-            bv.Velocity = Vector3.new(0, 0, 0)
-            bv.Parent = hrp
+        local force = hrp:FindFirstChild("FloatForce")
+        if not force then
+            force = Instance.new("BodyVelocity")
+            force.Name = "FloatForce"
+            force.MaxForce = Vector3.new(0, 50000, 0)
+            force.P = 1500
+            force.Parent = hrp
         end
-        local bv = hrp.FloatBV
-        -- Giữ độ cao ổn định
-        local targetY = hrp.Position.Y
-        if hrp.Position.Y < States.FloatHeight + 2 then
-            bv.Velocity = Vector3.new(0, 15, 0)
-        else
-            bv.Velocity = Vector3.new(0, 0.5, 0) -- nhẹ để không rơi
+        force.Velocity = Vector3.new(0, States.FloatPower * 2.2, 0)
+    else
+        if hrp:FindFirstChild("FloatForce") then
+            hrp.FloatForce:Destroy()
         end
     end
 
-    -- ====================== HITBOX EXPANDER ======================
-    if States.HitboxExpander then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local targetHRP = player.Character.HumanoidRootPart
-                targetHRP.Size = Vector3.new(States.HitboxSize, States.HitboxSize, States.HitboxSize)
-                targetHRP.Transparency = 0.7
-                targetHRP.BrickColor = BrickColor.new("Really red")
-                targetHRP.Material = Enum.Material.Neon
-                targetHRP.CanCollide = false
-            end
+    -- ====================== AIMCAM ======================
+    if States.AimCam and States.SelectedTarget then
+        local targetChar = States.SelectedTarget.Character
+        if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+            local targetHRP = targetChar.HumanoidRootPart
+            Camera.CameraType = Enum.CameraType.Scriptable
+            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, targetHRP.Position + Vector3.new(0, 1.5, 0))
+        else
+            States.AimCam = false
+            Camera.CameraType = Enum.CameraType.Custom
         end
     end
 end)
@@ -473,8 +548,28 @@ LocalPlayer.CharacterAdded:Connect(function(char)
     end
 end)
 
+-- Refresh player list
+Players.PlayerAdded:Connect(function()
+    task.wait(1)
+    RefreshPlayerList()
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if States.SelectedTarget == plr then
+        States.SelectedTarget = nil
+        States.AimCam = false
+        Camera.CameraType = Enum.CameraType.Custom
+    end
+    RefreshPlayerList()
+end)
+
+task.spawn(function()
+    task.wait(1)
+    RefreshPlayerList()
+end)
+
 Rayfield:Notify({
     Title = "Aura Battles Hub",
-    Content = "Loaded • Hitbox Expander + Float",
+    Content = "Loaded • AntiKB mạnh + Float + AimCam",
     Duration = 5
 })
