@@ -1,9 +1,6 @@
 --[[
-    Aura Battles OP Hub v7
-    - Float Platform (tạo sàn + lưu Y + tự kéo lên)
-    - Anti Knockback mạnh
-    - AimCam (tự động xoay cam về mục tiêu)
-    - No Cooldown
+    Aura Battles OP Hub
+    Float Platform + Anti Knockback + AimCam + No Cooldown
 ]]
 
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
@@ -20,7 +17,6 @@ local Window = Rayfield:CreateWindow({
     KeySystem = false
 })
 
--- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -28,7 +24,6 @@ local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- States
 local States = {
     Speed = false,
     SpeedValue = 28,
@@ -72,10 +67,8 @@ PlayerTab:CreateToggle({
     CurrentValue = false,
     Callback = function(Value)
         States.Speed = Value
-        if Value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = States.SpeedValue
-        elseif LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = Value and States.SpeedValue or 16
         end
     end
 })
@@ -99,11 +92,14 @@ PlayerTab:CreateToggle({
     CurrentValue = false,
     Callback = function(Value)
         States.Jump = Value
-        if Value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.JumpPower = States.JumpValue
-            LocalPlayer.Character.Humanoid.UseJumpPower = true
-        elseif LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.JumpPower = 50
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            local hum = LocalPlayer.Character.Humanoid
+            if Value then
+                hum.JumpPower = States.JumpValue
+                hum.UseJumpPower = true
+            else
+                hum.JumpPower = 50
+            end
         end
     end
 })
@@ -136,7 +132,7 @@ PlayerTab:CreateToggle({
 PlayerTab:CreateSection("Float Platform")
 
 PlayerTab:CreateSlider({
-    Name = "Khoảng cách sàn (dưới chân)",
+    Name = "Khoảng cách sàn",
     Range = {2, 7},
     Increment = 0.5,
     CurrentValue = 3.5,
@@ -146,18 +142,17 @@ PlayerTab:CreateSlider({
 })
 
 PlayerTab:CreateToggle({
-    Name = "Float Platform (Sàn dưới chân)",
+    Name = "Float Platform",
     CurrentValue = false,
     Callback = function(Value)
         States.Float = Value
-        
         if Value then
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
                 States.FloatY = char.HumanoidRootPart.Position.Y
                 Rayfield:Notify({
                     Title = "Float Platform",
-                    Content = "Đã lưu độ cao Y: " .. math.floor(States.FloatY),
+                    Content = "Đã lưu Y: " .. math.floor(States.FloatY),
                     Duration = 3
                 })
             end
@@ -173,7 +168,6 @@ PlayerTab:CreateToggle({
 -- ====================== COMBAT TAB ======================
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 
--- Anti Knockback
 CombatTab:CreateSection("Anti Knockback")
 
 CombatTab:CreateSlider({
@@ -187,7 +181,7 @@ CombatTab:CreateSlider({
 })
 
 CombatTab:CreateToggle({
-    Name = "Anti Knockback (Mạnh)",
+    Name = "Anti Knockback",
     CurrentValue = false,
     Callback = function(Value)
         States.AntiKnockback = Value
@@ -201,11 +195,10 @@ CombatTab:CreateToggle({
     end
 })
 
--- No Cooldown
 CombatTab:CreateSection("No Cooldown")
 
 CombatTab:CreateToggle({
-    Name = "No Cooldown (Không hồi chiêu)",
+    Name = "No Cooldown",
     CurrentValue = false,
     Callback = function(Value)
         States.NoCooldown = Value
@@ -220,7 +213,7 @@ CombatTab:CreateToggle({
 })
 
 CombatTab:CreateButton({
-    Name = "Teleport to Safe Zone",
+    Name = "Teleport Safe Zone",
     Callback = function()
         local char = LocalPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
@@ -258,7 +251,7 @@ local function RefreshPlayerList()
 end
 
 CombatTab:CreateButton({
-    Name = "AimCam vào mục tiêu",
+    Name = "Bật AimCam",
     Callback = function()
         if States.SelectedTarget and States.SelectedTarget.Character and States.SelectedTarget.Character:FindFirstChild("HumanoidRootPart") then
             States.AimCam = true
@@ -290,7 +283,7 @@ CombatTab:CreateButton({
 })
 
 CombatTab:CreateButton({
-    Name = "Refresh danh sách người chơi",
+    Name = "Refresh danh sách",
     Callback = function()
         RefreshPlayerList()
         Rayfield:Notify({
@@ -326,7 +319,7 @@ VisualsTab:CreateToggle({
 })
 
 VisualsTab:CreateToggle({
-    Name = "ESP (Highlight)",
+    Name = "ESP Highlight",
     CurrentValue = false,
     Callback = function(Value)
         States.ESP = Value
@@ -360,7 +353,7 @@ MiscTab:CreateToggle({
 })
 
 MiscTab:CreateButton({
-    Name = "Rejoin Server",
+    Name = "Rejoin",
     Callback = function()
         game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
     end
@@ -371,17 +364,20 @@ MiscTab:CreateButton({
     Callback = function()
         local Http = game:GetService("HttpService")
         local TPS = game:GetService("TeleportService")
-        local Api = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+        local Api = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+
         local function ListServers(cursor)
-            local Raw = game:HttpGet(Api .. ((cursor and "&cursor="..cursor) or ""))
+            local Raw = game:HttpGet(Api .. ((cursor and "&cursor=" .. cursor) or ""))
             return Http:JSONDecode(Raw)
         end
+
         local Server, Next
         repeat
             local Servers = ListServers(Next)
             Server = Servers.data[1]
             Next = Servers.nextPageCursor
         until Server and Server.id ~= game.JobId or not Next
+
         if Server then
             TPS:TeleportToPlaceInstance(game.PlaceId, Server.id, LocalPlayer)
         end
@@ -389,7 +385,6 @@ MiscTab:CreateButton({
 })
 
 -- ====================== LOOPS ======================
-
 UserInputService.JumpRequest:Connect(function()
     if States.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -399,22 +394,20 @@ end)
 RunService.Heartbeat:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
+
     local hum = char:FindFirstChild("Humanoid")
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hum or not hrp then return end
 
-    -- Speed
     if States.Speed then
         hum.WalkSpeed = States.SpeedValue
     end
 
-    -- Jump
     if States.Jump then
         hum.JumpPower = States.JumpValue
         hum.UseJumpPower = true
     end
 
-    -- Noclip
     if States.Noclip then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") then
@@ -423,12 +416,11 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- Spin Bot
     if States.SpinBot then
         hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(22), 0)
     end
 
-    -- ====================== ANTI KNOCKBACK ======================
+    -- Anti Knockback
     if States.AntiKnockback then
         local anti = hrp:FindFirstChild("AntiKB")
         if not anti then
@@ -441,12 +433,7 @@ RunService.Heartbeat:Connect(function()
 
         local power = (States.AntiKBPower or 8) / 10
         local vel = hrp.AssemblyLinearVelocity
-
-        hrp.AssemblyLinearVelocity = Vector3.new(
-            vel.X * (1 - power),
-            vel.Y,
-            vel.Z * (1 - power)
-        )
+        hrp.AssemblyLinearVelocity = Vector3.new(vel.X * (1 - power), vel.Y, vel.Z * (1 - power))
         anti.Velocity = Vector3.new(0, 0, 0)
     else
         if hrp:FindFirstChild("AntiKB") then
@@ -454,7 +441,7 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- ====================== FLOAT PLATFORM ======================
+    -- Float Platform
     if States.Float and States.FloatY then
         local platform = workspace:FindFirstChild("FloatPlatform")
         if not platform then
@@ -473,18 +460,9 @@ RunService.Heartbeat:Connect(function()
         local platformY = States.FloatY - States.FloatHeight
         platform.CFrame = CFrame.new(hrp.Position.X, platformY, hrp.Position.Z)
 
-        -- Nếu bị tụt xuống dưới sàn hơn 1 stud → kéo lên
         if hrp.Position.Y < (platformY + 1) then
-            hrp.CFrame = CFrame.new(
-                hrp.Position.X,
-                platformY + 3.2,
-                hrp.Position.Z
-            )
-            hrp.AssemblyLinearVelocity = Vector3.new(
-                hrp.AssemblyLinearVelocity.X,
-                0,
-                hrp.AssemblyLinearVelocity.Z
-            )
+            hrp.CFrame = CFrame.new(hrp.Position.X, platformY + 3.2, hrp.Position.Z)
+            hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, 0, hrp.AssemblyLinearVelocity.Z)
         end
     else
         if workspace:FindFirstChild("FloatPlatform") then
@@ -492,10 +470,10 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- ====================== NO COOLDOWN ======================
+    -- No Cooldown
     if States.NoCooldown then
         for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("NumberValue") or v:IsA("IntValue") then
+            if (v:IsA("NumberValue") or v:IsA("IntValue")) then
                 local name = string.lower(v.Name)
                 if string.find(name, "cooldown") or string.find(name, "cd") or string.find(name, "delay") or string.find(name, "timer") then
                     v.Value = 0
@@ -506,7 +484,7 @@ RunService.Heartbeat:Connect(function()
         local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
         if playerGui then
             for _, v in pairs(playerGui:GetDescendants()) do
-                if v:IsA("NumberValue") or v:IsA("IntValue") then
+                if (v:IsA("NumberValue") or v:IsA("IntValue")) then
                     local name = string.lower(v.Name)
                     if string.find(name, "cooldown") or string.find(name, "cd") or string.find(name, "delay") then
                         v.Value = 0
@@ -516,19 +494,17 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- ====================== AIMCAM (Tự động xoay cam về mục tiêu) ======================
+    -- AimCam
     if States.AimCam and States.SelectedTarget then
         local targetChar = States.SelectedTarget.Character
         if targetChar and targetChar:FindFirstChild("HumanoidRootPart") and targetChar:FindFirstChild("Humanoid") and targetChar.Humanoid.Health > 0 then
-            local targetHRP = targetChar.HumanoidRootPart
-            local targetPos = targetHRP.Position + Vector3.new(0, 1.5, 0)
-            local camPos = Camera.CFrame.Position
-            Camera.CFrame = CFrame.lookAt(camPos, targetPos)
+            local targetPos = targetChar.HumanoidRootPart.Position + Vector3.new(0, 1.5, 0)
+            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, targetPos)
         else
             States.AimCam = false
             Rayfield:Notify({
                 Title = "AimCam",
-                Content = "Mục tiêu đã mất, đã tắt AimCam",
+                Content = "Mục tiêu đã mất",
                 Duration = 2
             })
         end
@@ -553,17 +529,15 @@ RunService.RenderStepped:Connect(function()
             local char = player.Character
             local hum = char:FindFirstChild("Humanoid")
 
-            if States.ESP then
-                if not char:FindFirstChild("AuraESP") then
-                    local highlight = Instance.new("Highlight")
-                    highlight.Name = "AuraESP"
-                    highlight.FillColor = Color3.fromRGB(255, 50, 50)
-                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    highlight.FillTransparency = 0.55
-                    highlight.OutlineTransparency = 0
-                    highlight.Adornee = char
-                    highlight.Parent = char
-                end
+            if States.ESP and not char:FindFirstChild("AuraESP") then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "AuraESP"
+                highlight.FillColor = Color3.fromRGB(255, 50, 50)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.FillTransparency = 0.55
+                highlight.OutlineTransparency = 0
+                highlight.Adornee = char
+                highlight.Parent = char
             end
 
             if States.NameESP and hum then
@@ -598,8 +572,7 @@ RunService.RenderStepped:Connect(function()
                     healthLabel.TextScaled = true
                     healthLabel.Parent = billboard
                 else
-                    local billboard = char.NameESP
-                    local healthLabel = billboard:FindFirstChild("HealthLabel")
+                    local healthLabel = char.NameESP:FindFirstChild("HealthLabel")
                     if healthLabel then
                         healthLabel.Text = math.floor(hum.Health) .. " HP"
                         healthLabel.TextColor3 = hum.Health > 50 and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 50, 50)
@@ -637,4 +610,11 @@ end)
 
 task.spawn(function()
     task.wait(1)
-    RefreshPlayerLi
+    RefreshPlayerList()
+end)
+
+Rayfield:Notify({
+    Title = "Aura Battles Hub",
+    Content = "Loaded thành công",
+    Duration = 5
+})
